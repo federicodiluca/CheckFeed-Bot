@@ -1,0 +1,4 @@
+requests
+feedparser
+python-telegram-bot==13.15
+schedule

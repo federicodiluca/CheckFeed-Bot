@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+
+# Data
+data/
+!data/.gitkeep
+
+# Config (utente)
+config.json
+
+# Logs
+*.log

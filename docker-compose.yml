@@ -1,0 +1,11 @@
+version: "3.9"
+
+services:
+  checkfeed:
+    build: .
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - TZ=Europe/Rome
+      - PYTHONPATH=/usr/src/app
+    restart: always
