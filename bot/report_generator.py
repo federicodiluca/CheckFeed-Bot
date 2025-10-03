@@ -4,9 +4,6 @@ from bot.logger import log
 from bot.telegram import send_message
 import os
 
-REPORT_DIR = "data/reports"
-os.makedirs(REPORT_DIR, exist_ok=True)
-
 def generate_report():
     news = load_news()
     today = datetime.now().date()
@@ -14,14 +11,15 @@ def generate_report():
 
     if not today_news:
         log("Nessuna notizia per oggi.")
+        send_message("🗓️ Nessuna notizia per oggi.")
         return
 
-    report_file = os.path.join(REPORT_DIR, f"report_{today}.md")
-    with open(report_file, "w", encoding="utf-8") as f:
-        f.write(f"# Report del {today}\n\n")
-        for n in today_news:
-            f.write(f"- **{n['title']}** ({n['source']})\n")
-            f.write(f"  Link: {n['link']}\n\n")
+    # Componi messaggio Telegram
+    message_lines = [f"📢 Report del {today} ({len(today_news)} notizie):\n"]
+    for n in today_news:
+        message_lines.append(f"- {n['title']} ({n['source']})\n  {n['link']}")
+    message_text = "\n\n".join(message_lines)
 
-    send_message(f"📢 Report del {today} generato con {len(today_news)} notizie.")
-    log(f"📄 Report creato: {report_file}")
+    # Invio Telegram
+    send_message(message_text)
+    log(f"📄 Report Telegram inviato con {len(today_news)} notizie.")

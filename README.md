@@ -13,7 +13,7 @@ Un bot in **Python + Docker** che:
 
 * Polling periodico dei feed (es. ogni 60 minuti, configurabile)
 * Notifica immediata su Telegram se una notizia contiene una delle keyword specificate
-* Report giornaliero inviato a Telegram e salvato in `data/reports/`
+* Report giornaliero inviato a Telegram
 * Deduplica automatica delle notizie già viste
 * Log persistenti in `data/logs/` con cancellazione automatica dopo *N giorni*
 
@@ -34,7 +34,6 @@ Un bot in **Python + Docker** che:
 └── data/
     ├── .gitkeep
     ├── news.json
-    ├── reports/
     └── logs/
 ```
 
@@ -67,7 +66,7 @@ Inserisci i tuoi dati:
   "keywords": ["supplenze", "graduatorie", "docenti"],
   "daily_report_time": "18:00",
   "polling_minutes": 60,
-  "log_retention_days": 10
+  "data_retention_days": 10
 }
 ```
 
@@ -78,7 +77,7 @@ Inserisci i tuoi dati:
 * **keywords** → elenco di parole chiave da monitorare (alert immediato)
 * **daily_report_time** → orario invio report giornaliero (HH:MM)
 * **polling_minutes** → frequenza polling feed in minuti
-* **log_retention_days** → giorni dopo i quali i log vengono cancellati
+* **data_retention_days** → giorni dopo i quali log e news vengono cancellati
 
 ---
 
@@ -113,14 +112,13 @@ Inserisci i tuoi dati:
   - Titolo 1 (Fonte)
   - Titolo 2 (Fonte)
   ```
-* **File report** → salvato in `data/reports/report_YYYY-MM-DD.md`
 * **Log giornalieri** → `data/logs/YYYY-MM-DD.log`
 
 ---
 
 ## 🔧 Manutenzione
 
-* I log più vecchi di `log_retention_days` vengono eliminati automaticamente.
+* I log e le news più vecchi di `data_retention_days` vengono eliminati automaticamente.
 * Le notizie già viste sono salvate in `data/news.json`.
 * Per azzerare la cache notizie → cancellare `data/news.json`.
 
