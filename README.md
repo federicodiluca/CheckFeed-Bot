@@ -66,7 +66,8 @@ Inserisci i tuoi dati:
   "keywords": ["supplenze", "graduatorie", "docenti"],
   "daily_report_time": "18:00",
   "polling_minutes": 60,
-  "data_retention_days": 10
+  "data_retention_days": 10,
+  "disable_web_page_preview": true
 }
 ```
 
@@ -78,6 +79,7 @@ Inserisci i tuoi dati:
 * **daily_report_time** → orario invio report giornaliero (HH:MM)
 * **polling_minutes** → frequenza polling feed in minuti
 * **data_retention_days** → giorni dopo i quali log e news vengono cancellati
+* **disable_web_page_preview** → preview dei link disattivata di default
 
 ---
 

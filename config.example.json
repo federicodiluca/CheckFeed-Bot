@@ -11,5 +11,6 @@
   "keywords": ["supplenze", "graduatorie", "docenti"],
   "daily_report_time": "18:00",
   "polling_minutes": 60,
-  "data_retention_days": 10
+  "data_retention_days": 10,
+  "disable_web_page_preview": true
 }

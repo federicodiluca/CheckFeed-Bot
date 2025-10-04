@@ -1,5 +1,6 @@
 import os
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
+from bot.utils import parse_date
 
 LOG_DIR = "data/logs"
 os.makedirs(LOG_DIR, exist_ok=True)
@@ -20,7 +21,7 @@ def cleanup_logs(retention_days: int):
         if os.path.isfile(path) and file.endswith(".log"):
             file_date_str = file.replace(".log", "")
             try:
-                file_date = datetime.fromisoformat(file_date_str)
+                file_date = parse_date(file_date_str)
                 if file_date < cutoff:
                     os.remove(path)
                     log(f"🗑️ Rimosso log vecchio: {file}")
