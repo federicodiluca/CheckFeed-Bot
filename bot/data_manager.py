@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from bot.utils import parse_date
 from bot.logger import log  # utile per tracciare cleanup o errori
 
@@ -37,9 +37,9 @@ def save_news(news):
 
 
 def cleanup_news(retention_days: int):
-    """Rimuove le notizie più vecchie di retention_days, anche se la data non è in formato ISO."""
+    """Rimuove le notizie più vecchie di retention_days"""
     news = load_news()
-    cutoff = datetime.now() - timedelta(days=retention_days)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=retention_days)
     filtered_news = []
 
     for n in news:

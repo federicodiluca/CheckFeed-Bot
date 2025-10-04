@@ -30,7 +30,7 @@ start_telegram_listener()
 while True:
     try:
         schedule.run_pending()
-        time.sleep(60)
+        time.sleep(300)  # 5 minuti
     except Exception as e:
         err = traceback.format_exc()
         log(f"❌ Errore nel loop principale: {e}\n{err}")
