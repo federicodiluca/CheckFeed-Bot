@@ -1,14 +1,22 @@
-# Base
-FROM python:3.12-slim
+# Usa un'immagine Python leggera
+FROM python:3.11-slim
 
-# Working directory dentro Docker
+# Imposta la directory di lavoro
 WORKDIR /usr/src/app
 
-# Copia tutto
-COPY . .
+# Installa dipendenze di sistema minime
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
 
-# Installa dipendenze
+# Copia i file di progetto
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Esegui main.py
+COPY . .
+
+# Crea directory persistente per dati e log
+RUN mkdir -p data logs
+
+# Avvia il bot
 CMD ["python", "main.py"]

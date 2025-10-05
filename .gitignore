@@ -1,16 +1,30 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.env
+*.py[cod]
+*$py.class
 
-# Data
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Data and logs
 data/
-!data/.gitkeep
+logs/
 
 # Config (utente)
 config.json
 
-# Logs
+# Docker
+*.pid
 *.log
+*.sock
+
+# Configs
+bot/config.json
+.env
+
+# macOS & misc
+.DS_Store
+.idea/
+.vscode/

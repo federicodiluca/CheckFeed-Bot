@@ -1,14 +1,16 @@
 {
   "telegram_token": "INSERISCI_IL_TUO_TOKEN",
-  "chat_id": "INSERISCI_CHAT_ID",
   "machine_name": "Server-01",
   "sites": [
     {
       "name": "USR Emilia Romagna",
       "url": "https://www.istruzioneer.gov.it/tutte-le-notizie/feed/"
+    },
+    {
+      "name": "USP Rimini",
+      "url": "https://rn.istruzioneer.gov.it/tutte-le-notizie/feed/"
     }
   ],
-  "keywords": ["supplenze", "graduatorie", "docenti"],
   "daily_report_time": "18:00",
   "polling_minutes": 60,
   "data_retention_days": 10,

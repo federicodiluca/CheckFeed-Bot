@@ -1,9 +1,19 @@
+version: '3.9'
+
 services:
   checkfeed:
     build: .
+    container_name: checkfeed-bot
+    restart: unless-stopped
     volumes:
-      - .:/usr/src/app
+      - ./data:/usr/src/app/data
+      - ./bot/config.json:/usr/src/app/bot/config.json:ro
     environment:
       - TZ=Europe/Rome
       - PYTHONPATH=/usr/src/app
-    restart: always
+    networks:
+      - checkfeed-net
+
+networks:
+  checkfeed-net:
+    driver: bridge
