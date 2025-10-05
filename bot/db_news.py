@@ -13,7 +13,7 @@ def add_news(title, link, source, published_at, content=""):
     # limito la lunghezza del content a 20k caratteri
     max_len = 20000
     content = content[:max_len] if content and len(content) > max_len else content
-
+    
     try:
         published_at = parse_rss_datetime(published_at) # converto in formato SQLite UTC standard
         cur.execute("""
@@ -21,8 +21,10 @@ def add_news(title, link, source, published_at, content=""):
         VALUES (?, ?, ?, ?, ?)
         """, (title, link, source, published_at, content))
         conn.commit()
+        return cur.rowcount > 0  # True se nuova, False se ignorata
     except Exception as e:
         log(f"❌ Errore inserimento news: {e}")
+        return False
     finally:
         conn.close()
 

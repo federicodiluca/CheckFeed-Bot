@@ -24,8 +24,11 @@ def fetch_news():
             description = entry.get("description", "")
             text_content = content_val or description or entry.get("summary", "")
 
-            # Salva tutto nel DB
-            add_news(title, link, source, published, text_content)
+            # Salva tutto nel DB e controlla se è nuova
+            is_new = add_news(title, link, source, published, text_content)
+            if not is_new:
+                continue  # news già presente → niente notifica
+
             new_entries.append(link)
 
             # Notifiche utenti filtrate per keywords
