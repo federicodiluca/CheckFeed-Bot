@@ -1,5 +1,5 @@
 from threading import Thread
-from bot.telegram import TELEGRAM_TOKEN, send_message
+from bot.telegram import TELEGRAM_TOKEN, send_long_message, send_message
 from bot.db_user import activate_user, add_user, deactivate_user, update_keywords
 from bot.db_news import get_recent_news
 from bot.news_fetcher import fetch_news
@@ -117,7 +117,7 @@ def handle_latest_command(telegram_id, text):
         preview = cleanHTMLPreview(r.get("content", "") or "")
         lines.append(f"<a href='{link}'>{source}</a> – {published[:16]}\n<b>{title}</b>\n<i>{preview}</i>\n")
 
-    send_message("\n\n".join(lines), parse_mode="HTML", chat_id=telegram_id)
+    send_long_message("\n\n".join(lines), chat_id=telegram_id, parse_mode="HTML")
 
 
 def start_telegram_listener():
