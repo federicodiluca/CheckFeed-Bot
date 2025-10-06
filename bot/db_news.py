@@ -52,7 +52,7 @@ def get_today_news():
     cur.execute("""
         SELECT title, link, source, published_at, content
         FROM news
-        WHERE date(published_at) >= datetime('now', 'start of day')
+        WHERE date(published_at) = date('now')
         ORDER BY datetime(published_at) DESC
     """)
     rows = cur.fetchall()
