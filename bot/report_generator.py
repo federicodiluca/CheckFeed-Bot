@@ -5,18 +5,23 @@ from bot.logger import log
 from bot.telegram import send_message
 from bot.utils import cleanHTMLPreview
 
-def generate_report():
+def generate_report(target_chat_id=None):
     """
-    Genera il report giornaliero e lo invia a tutti gli utenti attivi.
-    Le notizie sono filtrate per data odierna (campo published_at).
+    Genera il report giornaliero.
+    Se target_chat_id è None → invia a tutti gli utenti attivi.
+    Se target_chat_id è specificato → invia solo a quell'utente.
     """
-    today_news = get_today_news()  # già filtrato lato DB
+    today_news = get_today_news()
 
     if not today_news:
+        msg = "🗓️ Nessuna notizia per oggi."
+        if target_chat_id:
+            send_message(msg, chat_id=target_chat_id)
+        else:
+            users = get_users()
+            for user in users:
+                send_message(msg, chat_id=user["telegram_id"])
         log("🗓️ Nessuna notizia per oggi.")
-        users = get_users()
-        for user in users:
-            send_message("🗓️ Nessuna notizia per oggi.", chat_id=user["telegram_id"])
         return
 
     lines = [f"📢 <b>Report del {datetime.now():%d/%m/%Y}</b> — {len(today_news)} notizie trovate\n"]
@@ -33,15 +38,18 @@ def generate_report():
 
     text = "\n".join(lines).strip()
 
-    users = get_users()
-    if not users:
-        log("⚠️ Nessun utente attivo per l'invio del report.")
-        return
-
-    for user in users:
-        try:
-            send_message(text, parse_mode="HTML", chat_id=user["telegram_id"])
-        except Exception as e:
-            log(f"⚠️ Errore nell'invio report a {user['telegram_id']}: {e}")
-
-    log(f"📄 Report Telegram inviato a {len(users)} utenti ({len(today_news)} notizie).")
+    # invio
+    if target_chat_id:
+        send_message(text, parse_mode="HTML", chat_id=target_chat_id)
+        log(f"📄 Report inviato manualmente a {target_chat_id}.")
+    else:
+        users = get_users()
+        if not users:
+            log("⚠️ Nessun utente attivo per l'invio del report.")
+            return
+        for user in users:
+            try:
+                send_message(text, parse_mode="HTML", chat_id=user["telegram_id"])
+            except Exception as e:
+                log(f"⚠️ Errore nell'invio report a {user['telegram_id']}: {e}")
+        log(f"📄 Report Telegram inviato a {len(users)} utenti ({len(today_news)} notizie).")

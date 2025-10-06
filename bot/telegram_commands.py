@@ -85,8 +85,9 @@ def handle_commands():
                     send_message("✅ Notizie aggiornate manualmente.", chat_id=telegram_id)
 
                 elif text.startswith("/report"):
-                    generate_report()
+                    generate_report(target_chat_id=telegram_id)
                     send_message("✅ Report generato manualmente.", chat_id=telegram_id)
+
 
                 elif text.startswith("/latest"):
                     handle_latest_command(telegram_id, text)
