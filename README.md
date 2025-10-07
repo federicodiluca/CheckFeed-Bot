@@ -1,7 +1,3 @@
-Ecco il README aggiornato, revisionato per riflettere le modifiche più recenti (multi–utente, DB SQLite, content delle news, report giornaliero):
-
----
-
 # 📰 Telegram News Bot
 
 Un bot in **Python + Docker** che:
