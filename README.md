@@ -13,13 +13,13 @@ Un bot in **Python + Docker** che:
 
 ## 🚀 Funzionalità principali
 
-✅ Polling periodico dei feed (intervallo configurabile)
-✅ Notifiche immediate via Telegram su keyword specifiche
-✅ Report giornaliero automatico alle ore configurate
-✅ Deduplica automatica delle notizie già viste
-✅ Gestione log e news con cancellazione automatica dopo *N giorni*
-✅ Supporto **multi–utente con SQLite**
-✅ Ogni utente può personalizzare le **parole chiave** e ricevere solo ciò che gli interessa
+✅ Polling periodico dei feed (intervallo configurabile)  
+✅ Notifiche immediate via Telegram su keyword specifiche  
+✅ Report giornaliero automatico alle ore configurate  
+✅ Deduplica automatica delle notizie già viste  
+✅ Gestione log e news con cancellazione automatica dopo *N giorni*  
+✅ Supporto **multi–utente con SQLite**  
+✅ Ogni utente può personalizzare le **parole chiave** e ricevere solo ciò che gli interessa  
 ✅ Contenuto completo delle news memorizzato nel DB
 
 ---
