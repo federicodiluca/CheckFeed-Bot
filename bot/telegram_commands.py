@@ -25,10 +25,13 @@ def build_help_message():
 <b>Comandi disponibili:</b>
 /start — registra l'utente e mostra questo messaggio
 /stop — sospende le notifiche per questo utente
-/setkeywords parola1 parola2 — imposta le parole chiave
+/setkeywords parola1, parola2, PAROLA COMPOSTA — aggiunge parole chiave (separate da virgole)
+/removekeywords parola1, parola2, PAROLA COMPOSTA — rimuove keyword specifiche
+/keywords — mostra le tue keyword attive
 /fetch — aggiorna manualmente le notizie
 /report — genera e invia il report giornaliero
 /latest [n] — mostra le ultime n notizie (default 5)
+/commands — elenco rapido comandi
 
 <b>Scheduler:</b>
 • Fetch ogni {polling} minuti
@@ -59,7 +62,7 @@ def handle_commands():
                 if text.startswith("/start"):
                     added = add_user(telegram_id, username)
                     if added:
-                        send_message("👋 Benvenuto! Imposta le tue parole chiave con /setkeywords parola1 parola2", chat_id=telegram_id)
+                        send_message("👋 Benvenuto! Imposta le tue parole chiave con /setkeywords parola1, parola2, PAROLA COMPOSTA", chat_id=telegram_id)
                     else:
                         activate_user(telegram_id)
                         send_message("👋 Bentornato! Le notifiche sono attive. Usa /setkeywords per aggiornare.", chat_id=telegram_id)
@@ -73,12 +76,153 @@ def handle_commands():
                     send_message("✅ Hai disattivato le notifiche. Usa /start per riattivarle.", chat_id=telegram_id)
 
                 elif text.startswith("/setkeywords"):
-                    parts = text.split()[1:]
-                    if not parts:
-                        send_message("❗ Usa: /setkeywords parola1 parola2 ...", chat_id=telegram_id)
+                    # Estrai tutto dopo "/setkeywords "
+                    keywords_text = text[len("/setkeywords"):].strip()
+                    if not keywords_text:
+                        send_message("❗ Usa: /setkeywords parola1, parola2, PAROLA COMPOSTA, ...", chat_id=telegram_id)
                         continue
-                    update_keywords(telegram_id, parts)
-                    send_message(f"✅ Parole chiave aggiornate: {', '.join(parts)}", chat_id=telegram_id)
+                    
+                    # Dividi per virgole e pulisci spazi extra
+                    new_keywords = [kw.strip() for kw in keywords_text.split(",") if kw.strip()]
+                    if not new_keywords:
+                        send_message("❗ Usa: /setkeywords parola1, parola2, PAROLA COMPOSTA, ...", chat_id=telegram_id)
+                        continue
+                    
+                    # Ottieni le keyword attuali dell'utente
+                    from bot.db_user import get_users
+                    current_user = None
+                    for user in get_users():
+                        if user["telegram_id"] == telegram_id:
+                            current_user = user
+                            break
+                    
+                    # Combina keyword esistenti con quelle nuove
+                    existing_keywords = []
+                    if current_user and current_user["keywords"]:
+                        existing_keywords = [kw.strip() for kw in current_user["keywords"] if kw.strip()]
+                    
+                    # Crea una mappa case-insensitive per evitare duplicati
+                    keyword_map = {kw.lower(): kw for kw in existing_keywords}
+                    
+                    # Aggiungi le nuove keyword evitando duplicati (case-insensitive)
+                    added_keywords = []
+                    skipped_keywords = []
+                    
+                    for new_kw in new_keywords:
+                        if new_kw.lower() not in keyword_map:
+                            keyword_map[new_kw.lower()] = new_kw
+                            added_keywords.append(new_kw)
+                        else:
+                            skipped_keywords.append(new_kw)
+                    
+                    # Lista finale delle keyword (mantenendo l'ordine: esistenti + nuove)
+                    final_keywords = existing_keywords + added_keywords
+                    
+                    if not added_keywords:
+                        send_message(f"❌ Tutte le keyword specificate sono già presenti.\n📝 Keyword attuali: {', '.join(existing_keywords)}", chat_id=telegram_id)
+                        continue
+                    
+                    update_keywords(telegram_id, final_keywords)
+                    
+                    message = f"✅ Keyword aggiunte: {', '.join(added_keywords)}"
+                    if skipped_keywords:
+                        message += f"\n⚠️ Già presenti: {', '.join(skipped_keywords)}"
+                    message += f"\n📝 Totale keyword: {len(final_keywords)}"
+                    
+                    send_message(message, chat_id=telegram_id)
+
+                elif text.startswith("/removekeywords"):
+                    # Estrai tutto dopo "/removekeywords "
+                    keywords_text = text[len("/removekeywords"):].strip()
+                    if not keywords_text:
+                        send_message("❗ Usa: /removekeywords parola1, parola2, PAROLA COMPOSTA, ...", chat_id=telegram_id)
+                        continue
+                    
+                    # Dividi per virgole e pulisci spazi extra
+                    keywords_to_remove = [kw.strip().lower() for kw in keywords_text.split(",") if kw.strip()]
+                    if not keywords_to_remove:
+                        send_message("❗ Usa: /removekeywords parola1, parola2, PAROLA COMPOSTA, ...", chat_id=telegram_id)
+                        continue
+                    
+                    # Ottieni le keyword attuali dell'utente
+                    from bot.db_user import get_users
+                    current_user = None
+                    for user in get_users():
+                        if user["telegram_id"] == telegram_id:
+                            current_user = user
+                            break
+                    
+                    if not current_user or not current_user["keywords"]:
+                        send_message("❌ Non hai keyword impostate. Usa /setkeywords per aggiungerne.", chat_id=telegram_id)
+                        continue
+                    
+                    # Ottieni le keyword originali (mantenendo il case)
+                    original_keywords = [kw.strip() for kw in current_user["keywords"] if kw.strip()]
+                    
+                    # Crea una mappa case-insensitive per trovare le corrispondenze
+                    keyword_map = {kw.lower(): kw for kw in original_keywords}
+                    
+                    # Trova le keyword da rimuovere (corrispondenze case-insensitive)
+                    keywords_to_remove_original = []
+                    keywords_not_found = []
+                    
+                    for remove_kw in keywords_to_remove:
+                        if remove_kw in keyword_map:
+                            keywords_to_remove_original.append(keyword_map[remove_kw])
+                        else:
+                            keywords_not_found.append(remove_kw)
+                    
+                    if not keywords_to_remove_original:
+                        current_display = [keyword_map[k] for k in keyword_map.keys()]
+                        send_message(f"❌ Nessuna delle keyword specificate è stata trovata.\n📝 Keyword attuali: {', '.join(current_display)}", chat_id=telegram_id)
+                        continue
+                    
+                    # Rimuovi solo le keyword specificate
+                    final_keywords = [kw for kw in original_keywords if kw not in keywords_to_remove_original]
+                    
+                    update_keywords(telegram_id, final_keywords)
+                    
+                    if final_keywords:
+                        send_message(f"✅ Keyword rimosse: {', '.join(keywords_to_remove_original)}\n📝 Keyword rimanenti: {', '.join(final_keywords)}", chat_id=telegram_id)
+                    else:
+                        send_message(f"✅ Keyword rimosse: {', '.join(keywords_to_remove_original)}\n📝 Non hai più keyword impostate.", chat_id=telegram_id)
+
+                elif text.startswith("/keywords"):
+                    # Ottieni le keyword attuali dell'utente
+                    from bot.db_user import get_users
+                    current_user = None
+                    for user in get_users():
+                        if user["telegram_id"] == telegram_id:
+                            current_user = user
+                            break
+                    
+                    if not current_user or not current_user["keywords"]:
+                        send_message("❌ Non hai keyword impostate.\n💡 Usa /setkeywords per aggiungerne alcune!", chat_id=telegram_id)
+                    else:
+                        keywords_list = [kw.strip() for kw in current_user["keywords"] if kw.strip()]
+                        keywords_count = len(keywords_list)
+                        keywords_text = "\n".join([f"• {kw}" for kw in keywords_list])
+                        
+                        message = f"📝 <b>Le tue keyword attive ({keywords_count}):</b>\n\n{keywords_text}\n\n💡 Usa /setkeywords per modificare o /removekeywords per rimuovere."
+                        send_message(message, parse_mode="HTML", chat_id=telegram_id)
+
+                elif text.startswith("/commands"):
+                    commands_list = f"""
+📋 <b>Elenco comandi disponibili:</b>
+
+/start — registra e mostra informazioni complete
+/stop — sospende le notifiche
+/setkeywords parola1, parola2, PAROLA COMPOSTA — aggiunge keyword (separate da virgole)  
+/removekeywords parola1, parola2, PAROLA COMPOSTA — rimuove keyword specifiche
+/keywords — mostra le tue keyword attive
+/fetch — aggiorna notizie manualmente
+/report — genera report giornaliero
+/latest [n] — mostra ultime n notizie (default 5)
+/commands — mostra questo elenco
+
+💡 <i>Usa /start per informazioni complete su feed e scheduler.</i>
+"""
+                    send_message(commands_list.strip(), parse_mode="HTML", chat_id=telegram_id)
 
                 elif text.startswith("/fetch"):
                     fetch_news()
@@ -122,3 +266,7 @@ def handle_latest_command(telegram_id, text):
 
 def start_telegram_listener():
     Thread(target=handle_commands, daemon=True).start()
+
+def normalize_text(text):
+    """Normalizza il testo sostituendo diversi tipi di apostrofi"""
+    return text.replace("'", "'").replace("'", "'")
