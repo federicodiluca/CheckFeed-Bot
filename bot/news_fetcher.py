@@ -38,8 +38,10 @@ def fetch_news():
                 if not kws:
                     continue
 
-                if any(kw in full_text for kw in kws):
+                matched_keywords = [kw for kw in kws if kw in full_text]
+                if matched_keywords:
                     preview = cleanHTMLPreview(text_content)
+                    log(f"📨 Notifica inviata a {user['telegram_id']} per keyword: {', '.join(matched_keywords)} | Titolo: {title}")
                     send_message(
                         f"🚨 <a href='{link}'>{source}</a>\n<b>{title}</b>\n<i>{preview}</i>",
                         parse_mode="HTML",
