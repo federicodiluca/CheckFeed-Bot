@@ -1,4 +1,5 @@
 import feedparser
+import re
 from datetime import datetime
 from bot.config_loader import get_config
 from bot.db_news import add_news
@@ -38,7 +39,13 @@ def fetch_news():
                 if not kws:
                     continue
 
-                matched_keywords = [kw for kw in kws if kw in full_text]
+                # Ricerca esatta delle parole (word boundaries)
+                matched_keywords = []
+                for kw in kws:
+                    # Utilizza \b per word boundaries - cerca la parola esatta
+                    if re.search(r'\b' + re.escape(kw) + r'\b', full_text):
+                        matched_keywords.append(kw)
+                
                 if matched_keywords:
                     preview = cleanHTMLPreview(text_content)
                     log(f"📨 Notifica inviata a {user['telegram_id']} per keyword: {', '.join(matched_keywords)} | Titolo: {title}")
