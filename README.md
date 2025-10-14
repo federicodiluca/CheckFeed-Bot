@@ -13,14 +13,18 @@ Un bot in **Python + Docker** che:
 
 ## 🚀 Funzionalità principali
 
-✅ Polling periodico dei feed (intervallo configurabile)  
-✅ Notifiche immediate via Telegram su keyword specifiche  
-✅ Report giornaliero automatico alle ore configurate  
-✅ Deduplica automatica delle notizie già viste  
-✅ Gestione log e news con cancellazione automatica dopo *N giorni*  
-✅ Supporto **multi–utente con SQLite**  
-✅ Ogni utente può personalizzare le **parole chiave** e ricevere solo ciò che gli interessa  
-✅ Contenuto completo delle news memorizzato nel DB
+✅ **Polling periodico** dei feed (intervallo configurabile)  
+✅ **Notifiche immediate** via Telegram su keyword specifiche  
+✅ **Report giornaliero** automatico alle ore configurate  
+✅ **Deduplica automatica** delle notizie già viste  
+✅ **Gestione log e news** con cancellazione automatica dopo *N giorni*  
+✅ **Supporto multi–utente** con SQLite  
+✅ **Ricerca keyword precisa** con word boundaries (parole esatte)  
+✅ **Gestione keyword avanzata** (aggiungi/rimuovi selettivamente)  
+✅ **Supporto parole composte** con spazi nelle keyword  
+✅ **Controllo duplicati intelligente** (case-insensitive)  
+✅ **Contenuto completo** delle news memorizzato nel DB  
+✅ **Comandi interattivi** con feedback dettagliato
 
 ---
 
@@ -83,17 +87,31 @@ Niente più config manuale: ogni utente Telegram ha il proprio profilo salvato i
 
 ## 💬 Comandi disponibili
 
-| Comando                              | Descrizione                                      |
-| ------------------------------------ | ------------------------------------------------ |
-| `/start`                             | Mostra il messaggio di aiuto e registra l’utente |
-| `/stop`                              | Sospende le notifiche per questo utente          |
-| `/fetch`                             | Aggiorna manualmente i feed                      |
-| `/report`                            | Genera e invia il report giornaliero             |
-| `/latest [n]`                        | Mostra le ultime *n* notizie (default: 5)        |
-| `/setkeywords parola1, parola2, ...` | Imposta le parole chiave per filtrare le notizie |
-| `/help`                              | Mostra il riepilogo dei comandi disponibili      |
+| Comando                                     | Descrizione                                           |
+| ------------------------------------------- | ----------------------------------------------------- |
+| `/start`                                    | Registra l'utente e mostra informazioni complete      |
+| `/stop`                                     | Sospende le notifiche per questo utente               |
+| `/setkeywords parola1, parola2, COMPOSTA`   | **Aggiunge** parole chiave (separate da virgole)      |
+| `/removekeywords parola1, parola2, ...`     | **Rimuove** keyword specifiche dall'elenco            |
+| `/keywords`                                 | Mostra le tue keyword attualmente attive              |
+| `/fetch`                                    | Aggiorna manualmente i feed                           |
+| `/report`                                   | Genera e invia il report giornaliero                  |
+| `/latest [n]`                               | Mostra le ultime *n* notizie (default: 5)             |
+| `/commands`                                 | Elenco rapido di tutti i comandi disponibili          |
 
-All’avvio, il bot invia automaticamente un messaggio di **recap con tutti i comandi e i feed monitorati**.
+### 🔍 **Ricerca keyword migliorata**
+- Le keyword ora usano **ricerca esatta** delle parole
+- "Rowe" **non** viene più trovato in "Crowe"  
+- "Demir" **non** viene più trovato in "Ademir"
+- Supporto per **parole composte** con spazi
+
+### 🎯 **Gestione keyword intelligente**
+- `/setkeywords` **aggiunge** alle keyword esistenti (non le sostituisce)
+- `/removekeywords` **rimuove** solo quelle specificate  
+- **Controllo duplicati** automatico (case-insensitive)
+- Feedback dettagliato su operazioni eseguite
+
+All'avvio, il bot invia automaticamente un messaggio di **recap con tutti i comandi e i feed monitorati**.
 
 ---
 
@@ -123,7 +141,24 @@ Concorso docenti AM2A – graduatoria aggiornata
 https://www.istruzioneer.gov.it/...
 ```
 
-**🗓️ Report giornaliero**
+**� Esempi di comandi**
+
+```
+/setkeywords scuola, docenti, GRADUATORIA FINALE
+✅ Keyword aggiunte: scuola, docenti, GRADUATORIA FINALE
+📝 Totale keyword: 3
+
+/removekeywords docenti
+✅ Keyword rimosse: docenti  
+📝 Keyword rimanenti: scuola, GRADUATORIA FINALE
+
+/keywords
+📝 Le tue keyword attive (2):
+• scuola
+• GRADUATORIA FINALE
+```
+
+**�🗓️ Report giornaliero**
 
 ```
 📢 Report del 2025-10-05 (3 notizie)
