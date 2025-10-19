@@ -7,6 +7,7 @@ WORKDIR /usr/src/app
 # Installa dipendenze di sistema minime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copia i file di progetto
