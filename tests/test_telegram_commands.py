@@ -385,3 +385,85 @@ def test_removesource_rules(sent_messages, fake_sources):
     assert "Fonte non trovata" in sent_messages[-1]["text"]
     tc.handle_update(update("/removesource", chat_id=1))
     assert "Usa: /removesource" in sent_messages[-1]["text"]
+
+
+# --- pulsanti inline di /sources -----------------------------------------
+
+def callback(data, chat_id=1, message_id=555, cq_id="cq1"):
+    return {
+        "update_id": 9,
+        "callback_query": {
+            "id": cq_id,
+            "from": {"id": chat_id, "username": "alice"},
+            "message": {"message_id": message_id, "chat": {"id": chat_id}},
+            "data": data,
+        },
+    }
+
+
+@pytest.fixture
+def callback_calls(monkeypatch):
+    calls = {"edits": [], "answers": []}
+    monkeypatch.setattr(tc, "edit_message_text", lambda chat_id, message_id, text, parse_mode=None, reply_markup=None:
+                        calls["edits"].append({"chat_id": chat_id, "message_id": message_id, "text": text, "reply_markup": reply_markup}))
+    monkeypatch.setattr(tc, "answer_callback_query", lambda cq_id, text=None: calls["answers"].append({"id": cq_id, "text": text}))
+    return calls
+
+
+def test_sources_sends_inline_keyboard(sent_messages):
+    add_user(1)
+    tc.handle_update(update("/sources"))
+    kb = sent_messages[-1]["reply_markup"]["inline_keyboard"]
+    assert [b["text"] for row in kb[:-1] for b in row] == ["✅ Feed Uno", "✅ Feed Due"]
+    assert [b["callback_data"] for row in kb[:-1] for b in row] == ["src:t:1", "src:t:2"]
+    assert [b["callback_data"] for b in kb[-1]] == ["src:all:1", "src:all:0"]
+    assert "Tocca una fonte" in sent_messages[-1]["text"]
+
+
+def test_callback_toggle_updates_message_and_answers(sent_messages, callback_calls):
+    add_user(1)
+    assert tc.handle_update(callback("src:t:2")) == "callback"
+    assert get_followed_source_ids(1) == {1}
+    assert callback_calls["answers"] == [{"id": "cq1", "text": "❌ Non segui più: Feed Due"}]
+    edit = callback_calls["edits"][-1]
+    assert edit["chat_id"] == 1 and edit["message_id"] == 555
+    assert "1/2 seguite" in edit["text"] and "❌ <b>2</b>. Feed Due" in edit["text"]
+    assert [b["text"] for row in edit["reply_markup"]["inline_keyboard"][:-1] for b in row] == ["✅ Feed Uno", "❌ Feed Due"]
+
+    tc.handle_update(callback("src:t:2", cq_id="cq2"))
+    assert get_followed_source_ids(1) == {1, 2}
+    assert callback_calls["answers"][-1]["text"] == "✅ Ora segui: Feed Due"
+    assert sent_messages == []  # nessun nuovo messaggio: si modifica quello esistente
+
+
+def test_callback_all_none_and_invalid(sent_messages, callback_calls):
+    add_user(1)
+    tc.handle_update(callback("src:all:0"))
+    assert get_followed_source_ids(1) == set()
+    assert "Non segui nessuna" in callback_calls["answers"][-1]["text"]
+    tc.handle_update(callback("src:all:1"))
+    assert get_followed_source_ids(1) == {1, 2}
+    n_edits = len(callback_calls["edits"])
+    tc.handle_update(callback("src:all:1"))          # già tutte: niente edit (Telegram lo rifiuterebbe)
+    assert len(callback_calls["edits"]) == n_edits
+    assert "Segui tutte" in callback_calls["answers"][-1]["text"]
+
+    tc.handle_update(callback("src:t:999"))
+    assert callback_calls["answers"][-1]["text"] == "Fonte non più disponibile"
+    n_edits = len(callback_calls["edits"])
+    tc.handle_update(callback("boh"))
+    assert callback_calls["answers"][-1]["text"] is None   # sconosciuto: chiude lo spinner e basta
+    assert len(callback_calls["edits"]) == n_edits
+
+
+def test_callback_registers_unknown_user(sent_messages, callback_calls):
+    tc.handle_update(callback("src:t:1", chat_id=42))
+    assert get_user(42) is not None
+    assert get_followed_source_ids(42) == {2}
+
+
+def test_callback_error_is_answered_not_raised(sent_messages, callback_calls, monkeypatch):
+    add_user(1)
+    monkeypatch.setattr(tc, "set_user_source", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("db")))
+    tc.handle_update(callback("src:t:1"))
+    assert callback_calls["answers"][-1]["text"] == "Errore, riprova"

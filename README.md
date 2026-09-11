@@ -106,7 +106,7 @@ Niente più config manuale: ogni utente Telegram ha il proprio profilo salvato i
 
 Le fonti vivono nel database (tabella `sources`); quelle di `config.json` vengono sincronizzate a ogni avvio.
 
-* Di default ogni utente segue **tutte** le fonti di `config.json`; con `/unfollow` e `/follow` sceglie quali tenere.
+* Di default ogni utente segue **tutte** le fonti di `config.json`; con `/sources` compare un pulsante per fonte: un tocco la attiva/disattiva (in alternativa `/follow n` e `/unfollow n` con il numero mostrato in elenco).
 * Con `/addsource URL [nome]` un utente aggiunge una fonte nuova. Il bot verifica che sia leggibile:
   1. è un **feed RSS/Atom**? → usato direttamente;
   2. è una **pagina HTML che dichiara un feed** (`<link rel="alternate" type="application/rss+xml">`, tipico di WordPress)? → usa quel feed;
@@ -130,7 +130,7 @@ Le fonti vivono nel database (tabella `sources`); quelle di `config.json` vengon
 | `/fetch`                                    | Aggiorna manualmente i feed                           |
 | `/report`                                   | Genera e invia il report giornaliero                  |
 | `/latest [n]`                               | Mostra le ultime *n* notizie (default: 5, max 50)     |
-| `/sources`                                  | Elenco fonti con ✅/❌ e numero per `/follow`          |
+| `/sources`                                  | Elenco fonti con pulsanti ✅/❌ per attivarle/disattivarle |
 | `/follow 1, 3` / `/follow all`              | Segui le fonti indicate                               |
 | `/unfollow 2` / `/unfollow all`             | Smetti di seguire le fonti indicate                   |
 | `/addsource URL [nome]`                     | Aggiunge una fonte (RSS o pagina notizie) con verifica |

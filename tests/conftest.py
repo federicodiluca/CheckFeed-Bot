@@ -105,8 +105,8 @@ def sent_messages(monkeypatch):
     """Cattura i messaggi che il bot invierebbe su Telegram, ovunque venga usato send_message."""
     messages = []
 
-    def fake_send(text, parse_mode=None, chat_id=None, disable_web_page_preview=None):
-        messages.append({"chat_id": chat_id, "text": text, "parse_mode": parse_mode})
+    def fake_send(text, parse_mode=None, chat_id=None, disable_web_page_preview=None, reply_markup=None):
+        messages.append({"chat_id": chat_id, "text": text, "parse_mode": parse_mode, "reply_markup": reply_markup})
         return {"ok": True, "result": {}}
 
     # send_long_message di bot.telegram chiama send_message dello stesso modulo

@@ -1,5 +1,5 @@
 from threading import Thread
-from bot.telegram import TELEGRAM_TOKEN, send_long_message, send_message
+from bot.telegram import TELEGRAM_TOKEN, answer_callback_query, edit_message_text, send_long_message, send_message
 from bot.db_user import activate_user, add_user, deactivate_user, get_user, update_keywords
 from bot.db_news import get_recent_news
 from bot.db_sources import (
@@ -59,7 +59,7 @@ def build_help_message(telegram_id=None):
 /fetch — aggiorna manualmente le notizie
 /report — genera e invia il report giornaliero
 /latest [n] — mostra le ultime n notizie (default {LATEST_DEFAULT}, max {LATEST_MAX})
-/sources — elenco fonti con quelle che segui
+/sources — elenco fonti con pulsanti per attivarle/disattivarle
 /follow n, m — segui le fonti indicate (o "all")
 /unfollow n, m — smetti di seguire le fonti indicate (o "all")
 /addsource URL [nome] — aggiungi una fonte (RSS o pagina notizie)
@@ -87,7 +87,7 @@ COMMANDS_MESSAGE = f"""
 /fetch — aggiorna notizie manualmente
 /report — genera report giornaliero
 /latest [n] — mostra ultime n notizie (default {LATEST_DEFAULT}, max {LATEST_MAX})
-/sources — elenco fonti e quali segui
+/sources — elenco fonti con pulsanti on/off
 /follow n, m — segui fonti (o "all")
 /unfollow n, m — non seguire fonti (o "all")
 /addsource URL [nome] — aggiungi una fonte
@@ -269,12 +269,84 @@ def format_sources_list(telegram_id):
         if s["origin"] == "user":
             extra += " · custom" + (" (tua)" if s["added_by"] == telegram_id else "")
         lines.append(f"{mark} <b>{s['id']}</b>. {escape_html(s['name'])}{extra}")
-    lines.append("\n💡 /follow n, m · /unfollow n, m · \"all\" per tutte · /addsource URL [nome]")
+    lines.append("\n👇 Tocca una fonte per attivarla/disattivarla. In alternativa: /follow n, m · /unfollow n, m · /addsource URL [nome]")
     return "\n".join(lines)
 
 
+CB_PREFIX = "src"  # callback_data: "src:t:<id>" toggle, "src:all:1|0" tutte/nessuna
+
+
+def build_sources_keyboard(telegram_id):
+    """Tastiera inline con un pulsante per fonte (✅/❌) più "Tutte" e "Nessuna"."""
+    sources = get_user_sources(telegram_id)
+    if not sources:
+        return None
+    rows = []
+    for s in sources:
+        mark = "✅" if s["followed"] else "❌"
+        rows.append([{"text": f"{mark} {s['name']}"[:64], "callback_data": f"{CB_PREFIX}:t:{s['id']}"}])
+    rows.append([
+        {"text": "✅ Tutte", "callback_data": f"{CB_PREFIX}:all:1"},
+        {"text": "❌ Nessuna", "callback_data": f"{CB_PREFIX}:all:0"},
+    ])
+    return {"inline_keyboard": rows}
+
+
 def cmd_sources(telegram_id, args):
-    send_long_message(format_sources_list(telegram_id), chat_id=telegram_id, parse_mode="HTML")
+    send_message(format_sources_list(telegram_id), chat_id=telegram_id, parse_mode="HTML",
+                 reply_markup=build_sources_keyboard(telegram_id))
+
+
+def handle_sources_callback(telegram_id, chat_id, message_id, data):
+    """Gestisce il tap su un pulsante di /sources. Ritorna il testo per il popup di conferma."""
+    parts = data.split(":")
+    if len(parts) != 3 or parts[0] != CB_PREFIX:
+        return None
+    action, value = parts[1], parts[2]
+
+    if get_user(telegram_id) is None:
+        add_user(telegram_id)
+    before = get_followed_source_ids(telegram_id)
+
+    if action == "t" and value.isdigit():
+        source = get_source(int(value))
+        if not source or not source["enabled"]:
+            return "Fonte non più disponibile"
+        currently = source["id"] in get_followed_source_ids(telegram_id)
+        set_user_source(telegram_id, source["id"], not currently)
+        feedback = f"{'❌ Non segui più' if currently else '✅ Ora segui'}: {source['name']}"
+    elif action == "all" and value in ("0", "1"):
+        follow = value == "1"
+        for s in get_sources():
+            set_user_source(telegram_id, s["id"], follow)
+        feedback = "✅ Segui tutte le fonti" if follow else "❌ Non segui nessuna fonte"
+    else:
+        return None
+
+    if get_followed_source_ids(telegram_id) != before:
+        # Telegram rifiuta un edit senza modifiche ("message is not modified"): lo evitiamo
+        edit_message_text(chat_id, message_id, format_sources_list(telegram_id), parse_mode="HTML",
+                          reply_markup=build_sources_keyboard(telegram_id))
+    return feedback
+
+
+def handle_callback_query(cq):
+    """Update di tipo callback_query (pressione di un pulsante inline)."""
+    telegram_id = (cq.get("from") or {}).get("id")
+    message = cq.get("message") or {}
+    chat_id = (message.get("chat") or {}).get("id")
+    message_id = message.get("message_id")
+    data = cq.get("data") or ""
+    feedback = None
+    if telegram_id is not None and chat_id is not None and message_id is not None:
+        try:
+            feedback = handle_sources_callback(telegram_id, chat_id, message_id, data)
+        except Exception as e:
+            log(f"❌ Errore callback '{data}': {e}")
+            feedback = "Errore, riprova"
+    if cq.get("id"):
+        answer_callback_query(cq["id"], text=feedback)
+    return "callback"
 
 
 def _parse_source_ids(args, telegram_id):
@@ -423,6 +495,9 @@ HANDLERS = {
 
 def handle_update(update):
     """Gestisce un singolo update di Telegram. Ritorna il comando eseguito (o None)."""
+    if update.get("callback_query"):
+        return handle_callback_query(update["callback_query"])
+
     message = update.get("message") or {}
     text = message.get("text", "")
     chat = message.get("chat") or {}

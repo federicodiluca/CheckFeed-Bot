@@ -16,8 +16,30 @@ SLEEP_BETWEEN_MSGS = 0.35  # evita di colpire rate limits
 REQUEST_TIMEOUT = 15
 
 
-def send_message(text, parse_mode=None, chat_id=None, disable_web_page_preview=None):
-    """Invia un messaggio Telegram. Con chat_id=None lo invia a tutti gli utenti attivi."""
+def api_call(method, payload):
+    """Chiama un metodo della Bot API. Ritorna {"ok": True, "result": ...} oppure {"ok": False, ...}."""
+    try:
+        # JSON: i booleani arrivano a Telegram come veri booleani, non come stringhe
+        resp = requests.post(f"{API_BASE}/{method}", json=payload, timeout=REQUEST_TIMEOUT)
+        try:
+            data = resp.json()
+        except ValueError:
+            data = {"ok": False, "status_code": resp.status_code, "text": resp.text}
+
+        if not resp.ok or not data.get("ok"):
+            log(f"❌ Telegram error {resp.status_code} - {method} - chat_id={payload.get('chat_id')} - resp={data}")
+            return {"ok": False, "status_code": resp.status_code, "data": data}
+
+        return {"ok": True, "result": data.get("result")}
+
+    except Exception as e:
+        log(f"❌ Errore chiamata Telegram {method}: {e}")
+        return {"ok": False, "exception": str(e)}
+
+
+def send_message(text, parse_mode=None, chat_id=None, disable_web_page_preview=None, reply_markup=None):
+    """Invia un messaggio Telegram. Con chat_id=None lo invia a tutti gli utenti attivi.
+    reply_markup: es. {"inline_keyboard": [[{"text": ..., "callback_data": ...}]]}."""
     if chat_id is None:
         results = []
         for user in get_users():
@@ -25,14 +47,15 @@ def send_message(text, parse_mode=None, chat_id=None, disable_web_page_preview=N
             if uid:
                 results.append(_send_single_message(
                     text, parse_mode=parse_mode, chat_id=uid,
-                    disable_web_page_preview=disable_web_page_preview,
+                    disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup,
                 ))
         return results
 
-    return _send_single_message(text, parse_mode=parse_mode, chat_id=chat_id, disable_web_page_preview=disable_web_page_preview)
+    return _send_single_message(text, parse_mode=parse_mode, chat_id=chat_id,
+                                disable_web_page_preview=disable_web_page_preview, reply_markup=reply_markup)
 
 
-def _send_single_message(text, parse_mode=None, chat_id=None, disable_web_page_preview=None):
+def _send_single_message(text, parse_mode=None, chat_id=None, disable_web_page_preview=None, reply_markup=None):
     """Funzione privata: invia un singolo messaggio a Telegram."""
     payload = {
         "chat_id": chat_id,
@@ -41,24 +64,32 @@ def _send_single_message(text, parse_mode=None, chat_id=None, disable_web_page_p
     }
     if parse_mode:
         payload["parse_mode"] = parse_mode
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+    return api_call("sendMessage", payload)
 
-    try:
-        # JSON: i booleani arrivano a Telegram come veri booleani, non come stringhe
-        resp = requests.post(f"{API_BASE}/sendMessage", json=payload, timeout=REQUEST_TIMEOUT)
-        try:
-            data = resp.json()
-        except ValueError:
-            data = {"ok": False, "status_code": resp.status_code, "text": resp.text}
 
-        if not resp.ok or not data.get("ok"):
-            log(f"❌ Telegram error {resp.status_code} - chat_id={chat_id} - resp={data}")
-            return {"ok": False, "status_code": resp.status_code, "data": data}
+def edit_message_text(chat_id, message_id, text, parse_mode=None, reply_markup=None):
+    """Modifica testo (e tastiera) di un messaggio già inviato dal bot."""
+    payload = {
+        "chat_id": chat_id,
+        "message_id": message_id,
+        "text": text,
+        "disable_web_page_preview": DISABLE_WEB_PAGE_PREVIEW,
+    }
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
+    if reply_markup is not None:
+        payload["reply_markup"] = reply_markup
+    return api_call("editMessageText", payload)
 
-        return {"ok": True, "result": data.get("result")}
 
-    except Exception as e:
-        log(f"❌ Errore invio Telegram: {e}")
-        return {"ok": False, "exception": str(e)}
+def answer_callback_query(callback_query_id, text=None):
+    """Chiude lo "spinner" del pulsante premuto, con eventuale notifica breve."""
+    payload = {"callback_query_id": callback_query_id}
+    if text:
+        payload["text"] = text[:200]
+    return api_call("answerCallbackQuery", payload)
 
 
 def split_long_message(text, max_len=MAX_MSG_LEN):

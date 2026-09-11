@@ -102,3 +102,17 @@ def test_send_long_message_sends_each_part(sent_messages):
     assert len(results) == len(sent_messages) > 1
     assert all(m["chat_id"] == 7 and m["parse_mode"] == "HTML" for m in sent_messages)
     assert telegram.send_long_message("", chat_id=7) == []
+
+
+def test_send_message_with_reply_markup_and_edit_and_answer(monkeypatch):
+    calls = []
+    monkeypatch.setattr("requests.post", lambda url, json=None, **kw: (calls.append((url.rsplit("/", 1)[1], json)), FakeResponse({"ok": True, "result": {}}))[1])
+    kb = {"inline_keyboard": [[{"text": "x", "callback_data": "src:t:1"}]]}
+    telegram.send_message("ciao", chat_id=1, reply_markup=kb)
+    telegram.edit_message_text(1, 55, "nuovo", parse_mode="HTML", reply_markup=kb)
+    telegram.answer_callback_query("cq1", text="ok")
+    telegram.answer_callback_query("cq2")
+    assert calls[0][0] == "sendMessage" and calls[0][1]["reply_markup"] == kb
+    assert calls[1] == ("editMessageText", {"chat_id": 1, "message_id": 55, "text": "nuovo", "disable_web_page_preview": True, "parse_mode": "HTML", "reply_markup": kb})
+    assert calls[2] == ("answerCallbackQuery", {"callback_query_id": "cq1", "text": "ok"})
+    assert calls[3] == ("answerCallbackQuery", {"callback_query_id": "cq2"})
