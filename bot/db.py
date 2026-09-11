@@ -11,6 +11,11 @@ def get_conn():
     return conn
 
 
+def _column_exists(cur, table, column):
+    cur.execute(f"PRAGMA table_info({table})")
+    return any(row["name"] == column for row in cur.fetchall())
+
+
 def init_db():
     parent = os.path.dirname(DB_PATH)
     if parent:
@@ -41,6 +46,37 @@ def init_db():
         fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
     """)
+
+    # Fonti: da config.json (origin='config') o aggiunte dagli utenti (origin='user').
+    # type: 'rss' (feed) oppure 'html' (pagina scrapata).
+    # default_follow: 1 = seguita da tutti salvo esclusione, 0 = opt-in.
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS sources (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        url TEXT UNIQUE NOT NULL,
+        type TEXT NOT NULL DEFAULT 'rss',
+        origin TEXT NOT NULL DEFAULT 'config',
+        added_by INTEGER,
+        enabled INTEGER NOT NULL DEFAULT 1,
+        default_follow INTEGER NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    # Override per utente: follow=1 segue, follow=0 esclude. Assente = default della fonte.
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS user_sources (
+        telegram_id INTEGER NOT NULL,
+        source_id INTEGER NOT NULL,
+        follow INTEGER NOT NULL DEFAULT 1,
+        PRIMARY KEY (telegram_id, source_id)
+    )
+    """)
+
+    # Migrazione: news.source_id (i DB creati prima non ce l'hanno)
+    if not _column_exists(cur, "news", "source_id"):
+        cur.execute("ALTER TABLE news ADD COLUMN source_id INTEGER")
 
     conn.commit()
     conn.close()

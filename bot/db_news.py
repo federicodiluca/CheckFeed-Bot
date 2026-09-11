@@ -5,7 +5,18 @@ from bot.utils import local_day_bounds_utc, parse_rss_datetime
 MAX_CONTENT_LEN = 20000
 
 
-def add_news(title, link, source, published_at, content=""):
+def _source_filter(source_ids):
+    """Ritorna (clausola SQL, parametri) per filtrare su un insieme di fonti.
+    None = nessun filtro; insieme vuoto = nessun risultato."""
+    if source_ids is None:
+        return "", []
+    ids = sorted(set(source_ids))
+    if not ids:
+        return " AND 0", []
+    return f" AND source_id IN ({','.join('?' * len(ids))})", ids
+
+
+def add_news(title, link, source, published_at, content="", source_id=None):
     """Inserisce una news. Ritorna True se è nuova, False se già presente o in errore."""
     content = content or ""
     if len(content) > MAX_CONTENT_LEN:
@@ -16,9 +27,9 @@ def add_news(title, link, source, published_at, content=""):
     try:
         published_at = parse_rss_datetime(published_at)  # formato SQLite UTC standard
         cur.execute("""
-        INSERT OR IGNORE INTO news (title, link, source, published_at, content)
-        VALUES (?, ?, ?, ?, ?)
-        """, (title, link, source, published_at, content))
+        INSERT OR IGNORE INTO news (title, link, source, published_at, content, source_id)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (title, link, source, published_at, content, source_id))
         conn.commit()
         return cur.rowcount > 0  # True se nuova, False se ignorata
     except Exception as e:
@@ -28,32 +39,37 @@ def add_news(title, link, source, published_at, content=""):
         conn.close()
 
 
-def get_recent_news(limit=10):
+def get_recent_news(limit=10, source_ids=None):
+    """Ultime news. source_ids=None → tutte; altrimenti solo quelle fonti."""
+    where, params = _source_filter(source_ids)
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT title, link, source, published_at, content
+    cur.execute(f"""
+        SELECT title, link, source, source_id, published_at, content
         FROM news
+        WHERE 1=1{where}
         ORDER BY datetime(published_at) DESC, id DESC
         LIMIT ?
-    """, (int(limit),))
+    """, params + [int(limit)])
     rows = cur.fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def get_today_news(now=None):
-    """Restituisce tutte le news pubblicate nel giorno locale corrente
-    (published_at è in UTC: i confini del giorno vengono convertiti)."""
+def get_today_news(now=None, source_ids=None):
+    """Restituisce le news pubblicate nel giorno locale corrente
+    (published_at è in UTC: i confini del giorno vengono convertiti).
+    source_ids=None → tutte le fonti; altrimenti solo quelle indicate."""
     start_utc, end_utc = local_day_bounds_utc(now)
+    where, params = _source_filter(source_ids)
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT title, link, source, published_at, content
+    cur.execute(f"""
+        SELECT title, link, source, source_id, published_at, content
         FROM news
-        WHERE datetime(published_at) >= datetime(?) AND datetime(published_at) < datetime(?)
+        WHERE datetime(published_at) >= datetime(?) AND datetime(published_at) < datetime(?){where}
         ORDER BY datetime(published_at) DESC, id DESC
-    """, (start_utc, end_utc))
+    """, [start_utc, end_utc] + params)
     rows = cur.fetchall()
     conn.close()
     return [dict(r) for r in rows]

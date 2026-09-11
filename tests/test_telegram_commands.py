@@ -54,7 +54,8 @@ def test_start_registers_user_and_sends_help(sent_messages):
     assert "Benvenuto" in sent_messages[0]["text"]
     help_text = sent_messages[1]["text"]
     assert sent_messages[1]["parse_mode"] == "HTML"
-    assert "• Feed Uno" in help_text and "• Feed Due" in help_text
+    assert "• ✅ Feed Uno" in help_text and "• ✅ Feed Due" in help_text
+    assert "/sources" in help_text and "/addsource" in help_text
     assert "Fetch ogni 15 minuti" in help_text
     assert "Report giornaliero alle 18:00" in help_text
     assert "Retention notizie e log: 3 giorni" in help_text
@@ -170,12 +171,12 @@ def test_report_command_targets_requesting_chat(sent_messages, monkeypatch):
     assert called == [5]
 
 
-def insert_news(n):
+def insert_news(n, source_id=1):
     conn = db.get_conn()
     for i in range(n):
         conn.execute(
-            "INSERT INTO news (title, link, source, published_at, content) VALUES (?, ?, ?, ?, ?)",
-            (f"News {i} & co", f"https://x/{i}", "Src", f"2025-10-{(i % 28) + 1:02d} 10:00:00", "<p>c</p>"),
+            "INSERT INTO news (title, link, source, published_at, content, source_id) VALUES (?, ?, ?, ?, ?, ?)",
+            (f"News {i} & co", f"https://x/{i}", "Src", f"2025-10-{(i % 28) + 1:02d} 10:00:00", "<p>c</p>", source_id),
         )
     conn.commit()
     conn.close()
@@ -200,6 +201,16 @@ def test_latest_default_and_bounds(sent_messages):
 
     tc.handle_update(update("/latest abc"))
     assert "Ultime 5 notizie" in sent_messages[-1]["text"]
+
+
+def test_latest_is_filtered_by_followed_sources(sent_messages):
+    insert_news(3, source_id=1)
+    tc.handle_update(update("/unfollow 1"))
+    tc.handle_update(update("/latest"))
+    assert "Nessuna notizia disponibile dalle fonti che segui" in sent_messages[-1]["text"]
+    tc.handle_update(update("/follow 1"))
+    tc.handle_update(update("/latest"))
+    assert "Ultime 3 notizie" in sent_messages[-1]["text"]
 
 
 def test_latest_escapes_html(sent_messages):
@@ -253,3 +264,124 @@ def test_handle_commands_polls_with_timeout_and_advances_offset(monkeypatch):
     assert calls[1]["params"]["offset"] == 12
     assert all(c["timeout"] > c["params"]["timeout"] for c in calls)
     assert slept and slept[0] == 5  # ok=False -> pausa, niente busy loop
+
+
+# --- fonti ----------------------------------------------------------------
+
+from bot.db_sources import get_followed_source_ids, get_source, get_sources  # noqa: E402
+from tests.fixtures import html_list_page, rss  # noqa: E402
+
+
+def test_sources_lists_with_marks(sent_messages):
+    add_user(1)
+    tc.handle_update(update("/sources"))
+    text = sent_messages[-1]["text"]
+    assert "2/2 seguite" in text
+    assert "✅ <b>1</b>. Feed Uno" in text and "✅ <b>2</b>. Feed Due" in text
+    assert sent_messages[-1]["parse_mode"] == "HTML"
+
+
+def test_follow_unfollow_flow(sent_messages):
+    add_user(1)
+    tc.handle_update(update("/unfollow 2"))
+    assert get_followed_source_ids(1) == {1}
+    assert "Non segui più: Feed Due" in sent_messages[-1]["text"]
+    assert "❌ <b>2</b>. Feed Due" in sent_messages[-1]["text"]
+
+    tc.handle_update(update("/unfollow all"))
+    assert get_followed_source_ids(1) == set()
+    assert "0/2 seguite" in sent_messages[-1]["text"]
+
+    tc.handle_update(update("/follow 1, 2, 99, x"))
+    assert get_followed_source_ids(1) == {1, 2}
+    assert "Ora segui: Feed Uno, Feed Due" in sent_messages[-1]["text"]
+    assert "Ignorate (non valide): 99, x" in sent_messages[-1]["text"]
+
+    tc.handle_update(update("/follow"))
+    assert "Usa: /follow" in sent_messages[-1]["text"]
+    tc.handle_update(update("/unfollow 99"))
+    assert "Nessuna fonte valida" in sent_messages[-1]["text"]
+
+
+def test_follow_registers_unknown_user(sent_messages):
+    tc.handle_update(update("/unfollow 1", chat_id=77))
+    assert get_user(77) is not None
+    assert get_followed_source_ids(77) == {2}
+
+
+def test_addsource_rss_via_autodiscovery_seeds_without_notifications(sent_messages, fake_sources):
+    add_user(1)
+    update_keywords(1, ["notizia"])
+    fake_sources["https://fc.example.org/tutte-le-notizie/"] = html_list_page([], feed_href="https://fc.example.org/feed/")
+    fake_sources["https://fc.example.org/feed/"] = rss(
+        [{"title": "Prima notizia", "link": "https://fc.example.org/1"}, {"title": "Seconda notizia", "link": "https://fc.example.org/2"}],
+        title="Ufficio VII",
+    )
+
+    tc.handle_update(update("/addsource https://fc.example.org/tutte-le-notizie/"))
+
+    src = get_source(3)
+    assert src["type"] == "rss" and src["url"] == "https://fc.example.org/feed/" and src["name"] == "Ufficio VII"
+    assert src["origin"] == "user" and src["added_by"] == 1
+    assert get_followed_source_ids(1) == {1, 2, 3}
+    texts = [m["text"] for m in sent_messages]
+    assert any("Controllo la fonte" in t for t in texts)
+    done = texts[-1]
+    assert "Fonte aggiunta: <b>Ufficio VII</b> (n. 3)" in done
+    assert "Tipo: feed RSS" in done and "Notizie trovate: 2 (salvate 2 nuove, senza notifica)" in done
+    assert not any("🚨" in t for t in texts)  # nessun alert per le notizie già pubblicate
+    assert len(db.get_conn().execute("SELECT * FROM news WHERE source_id=3").fetchall()) == 2
+
+
+def test_addsource_html_with_custom_name(sent_messages, fake_sources):
+    add_user(1)
+    items = [{"title": f"Notizia numero {i} abbastanza lunga", "link": f"/-/n{i}"} for i in range(3)]
+    fake_sources["https://mim.example/novita"] = html_list_page(items, base="https://mim.example")
+    tc.handle_update(update("/addsource https://mim.example/novita USR Marche"))
+    src = get_source(3)
+    assert src["type"] == "html" and src["name"] == "USR Marche"
+    assert "Tipo: pagina HTML (scraping)" in sent_messages[-1]["text"]
+    # nella lista è marcata come HTML e custom (tua)
+    tc.handle_update(update("/sources"))
+    assert "✅ <b>3</b>. USR Marche · HTML · custom (tua)" in sent_messages[-1]["text"]
+
+
+def test_addsource_rejects_unreadable_url(sent_messages, fake_sources):
+    add_user(1)
+    fake_sources["https://www.example.org/"] = html_list_page([])
+    tc.handle_update(update("/addsource https://www.example.org/"))
+    assert "Non riesco a leggere notizie" in sent_messages[-1]["text"]
+    assert len(get_sources()) == 2
+
+    tc.handle_update(update("/addsource"))
+    assert "Usa: /addsource" in sent_messages[-1]["text"]
+    tc.handle_update(update("/addsource ciao"))
+    assert "Usa: /addsource" in sent_messages[-1]["text"]
+
+
+def test_addsource_existing_url_just_follows(sent_messages, fake_sources):
+    add_user(1)
+    tc.handle_update(update("/unfollow 1"))
+    tc.handle_update(update("/addsource https://example.org/uno/feed/"))
+    assert "Fonte già presente: Feed Uno (n. 1). Ora la segui." in sent_messages[-1]["text"]
+    assert get_followed_source_ids(1) == {1, 2}
+    assert fake_sources["__calls__"] == []  # nessun download
+
+
+def test_removesource_rules(sent_messages, fake_sources):
+    add_user(1)
+    add_user(2)
+    fake_sources["https://c.example.org/feed/"] = rss([{"title": "A", "link": "https://c.example.org/1"}])
+    tc.handle_update(update("/addsource https://c.example.org/feed/ Custom", chat_id=1))
+
+    tc.handle_update(update("/removesource 1", chat_id=1))
+    assert "configurazione del bot" in sent_messages[-1]["text"]
+    tc.handle_update(update("/removesource 3", chat_id=2))
+    assert "solo le fonti che hai aggiunto tu" in sent_messages[-1]["text"]
+    tc.handle_update(update("/removesource 3", chat_id=1))
+    assert "Fonte rimossa: Custom" in sent_messages[-1]["text"]
+    assert [s["id"] for s in get_sources()] == [1, 2]
+    tc.handle_update(update("/removesource 3", chat_id=1))
+    assert "Fonte non trovata" in sent_messages[-1]["text"]
+    tc.handle_update(update("/removesource", chat_id=1))
+    assert "Usa: /removesource" in sent_messages[-1]["text"]

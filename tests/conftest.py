@@ -37,6 +37,8 @@ import bot.db as db  # noqa: E402
 import bot.telegram as telegram  # noqa: E402
 import bot.telegram_commands as telegram_commands  # noqa: E402
 import bot.news_fetcher as news_fetcher  # noqa: E402
+import bot.source_parser as source_parser  # noqa: E402
+from bot.db_sources import sync_config_sources  # noqa: E402
 
 
 class FakeResponse:
@@ -58,7 +60,6 @@ def no_network(monkeypatch):
 
     monkeypatch.setattr("requests.post", _blocked)
     monkeypatch.setattr("requests.get", _blocked)
-    monkeypatch.setattr(news_fetcher.feedparser, "parse", _blocked)
     yield
 
 
@@ -68,9 +69,35 @@ def fresh_db():
     if os.path.exists(db.DB_PATH):
         os.remove(db.DB_PATH)
     db.init_db()
+    sync_config_sources(TEST_CONFIG["sites"])
     yield
     if os.path.exists(db.DB_PATH):
         os.remove(db.DB_PATH)
+
+
+@pytest.fixture
+def fake_sources(monkeypatch):
+    """Mappa url -> bytes|str|Exception servita al posto della rete da source_parser.fetch_url.
+    Ritorna il dict (modificabile dal test) e registra le url richieste in ['__calls__']."""
+    table = {"__calls__": []}
+
+    def fake_fetch(url):
+        table["__calls__"].append(url)
+        result = table.get(url)
+        if result is None:
+            raise source_parser.SourceError(f"404 {url}")
+        if isinstance(result, Exception):
+            raise result
+        if isinstance(result, tuple):
+            data, ct = result
+        else:
+            data, ct = result, ""
+        if isinstance(data, str):
+            data = data.encode("utf-8")
+        return data, ct
+
+    monkeypatch.setattr(source_parser, "fetch_url", fake_fetch)
+    return table
 
 
 @pytest.fixture

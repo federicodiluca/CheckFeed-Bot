@@ -1,0 +1,187 @@
+from bot.db import get_conn
+
+
+def _row_to_source(row):
+    return {
+        "id": row["id"],
+        "name": row["name"],
+        "url": row["url"],
+        "type": row["type"],
+        "origin": row["origin"],
+        "added_by": row["added_by"],
+        "enabled": bool(row["enabled"]),
+        "default_follow": bool(row["default_follow"]),
+    }
+
+
+def sync_config_sources(sites):
+    """Allinea le fonti di config.json con la tabella sources.
+    Le fonti di config non più presenti vengono disabilitate (non cancellate,
+    così le news collegate restano consistenti). Ritorna il numero di fonti attive da config."""
+    conn = get_conn()
+    cur = conn.cursor()
+    urls = []
+    for site in sites:
+        url = site["url"].strip()
+        name = (site.get("name") or url).strip()
+        urls.append(url)
+        cur.execute("SELECT id FROM sources WHERE url=?", (url,))
+        row = cur.fetchone()
+        if row:
+            cur.execute(
+                "UPDATE sources SET name=?, origin='config', enabled=1, default_follow=1 WHERE id=?",
+                (name, row["id"]),
+            )
+        else:
+            cur.execute(
+                "INSERT INTO sources (name, url, type, origin, enabled, default_follow) VALUES (?, ?, 'rss', 'config', 1, 1)",
+                (name, url),
+            )
+    if urls:
+        placeholders = ",".join("?" * len(urls))
+        cur.execute(f"UPDATE sources SET enabled=0 WHERE origin='config' AND url NOT IN ({placeholders})", urls)
+    else:
+        cur.execute("UPDATE sources SET enabled=0 WHERE origin='config'")
+
+    # Migrazione: collega le news vecchie (senza source_id) alla fonte con lo stesso nome
+    cur.execute("""
+        UPDATE news SET source_id = (SELECT id FROM sources s WHERE s.name = news.source LIMIT 1)
+        WHERE source_id IS NULL
+    """)
+    conn.commit()
+    conn.close()
+    return len(urls)
+
+
+def get_sources(enabled_only=True):
+    conn = get_conn()
+    cur = conn.cursor()
+    if enabled_only:
+        cur.execute("SELECT * FROM sources WHERE enabled=1 ORDER BY id")
+    else:
+        cur.execute("SELECT * FROM sources ORDER BY id")
+    rows = cur.fetchall()
+    conn.close()
+    return [_row_to_source(r) for r in rows]
+
+
+def get_source(source_id):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM sources WHERE id=?", (source_id,))
+    row = cur.fetchone()
+    conn.close()
+    return _row_to_source(row) if row else None
+
+
+def get_source_by_url(url):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM sources WHERE url=?", (url.strip(),))
+    row = cur.fetchone()
+    conn.close()
+    return _row_to_source(row) if row else None
+
+
+def add_user_source(name, url, source_type, telegram_id):
+    """Aggiunge una fonte custom (opt-in per gli altri, seguita da chi la aggiunge).
+    Se l'URL esiste già (anche disabilitata) la riabilita e la fa seguire all'utente.
+    Ritorna (source, created)."""
+    url = url.strip()
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT id FROM sources WHERE url=?", (url,))
+    row = cur.fetchone()
+    if row:
+        source_id = row["id"]
+        cur.execute("UPDATE sources SET enabled=1 WHERE id=?", (source_id,))
+        created = False
+    else:
+        cur.execute(
+            "INSERT INTO sources (name, url, type, origin, added_by, enabled, default_follow) VALUES (?, ?, ?, 'user', ?, 1, 0)",
+            (name.strip(), url, source_type, telegram_id),
+        )
+        source_id = cur.lastrowid
+        created = True
+    cur.execute(
+        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, 1)",
+        (telegram_id, source_id),
+    )
+    conn.commit()
+    conn.close()
+    return get_source(source_id), created
+
+
+def remove_source(source_id, telegram_id=None):
+    """Disabilita una fonte custom. Se telegram_id è dato, deve essere chi l'ha aggiunta.
+    Ritorna True se rimossa, False altrimenti (fonte di config, inesistente o non propria)."""
+    source = get_source(source_id)
+    if not source or source["origin"] != "user":
+        return False
+    if telegram_id is not None and source["added_by"] != telegram_id:
+        return False
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("UPDATE sources SET enabled=0 WHERE id=?", (source_id,))
+    cur.execute("DELETE FROM user_sources WHERE source_id=?", (source_id,))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def set_user_source(telegram_id, source_id, follow):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, ?)",
+        (telegram_id, source_id, 1 if follow else 0),
+    )
+    conn.commit()
+    conn.close()
+
+
+def _overrides():
+    """{telegram_id: {source_id: follow}}"""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT telegram_id, source_id, follow FROM user_sources")
+    out = {}
+    for r in cur.fetchall():
+        out.setdefault(r["telegram_id"], {})[r["source_id"]] = bool(r["follow"])
+    conn.close()
+    return out
+
+
+def _effective(source, override):
+    if override is not None:
+        return override
+    return source["default_follow"]
+
+
+def get_user_sources(telegram_id, enabled_only=True):
+    """Lista delle fonti con il flag 'followed' calcolato per l'utente."""
+    overrides = _overrides().get(telegram_id, {})
+    result = []
+    for s in get_sources(enabled_only=enabled_only):
+        s = dict(s)
+        s["followed"] = _effective(s, overrides.get(s["id"]))
+        result.append(s)
+    return result
+
+
+def get_followed_source_ids(telegram_id):
+    return {s["id"] for s in get_user_sources(telegram_id) if s["followed"]}
+
+
+def get_followers_map(users):
+    """Per una lista di utenti ({telegram_id,...}) ritorna {source_id: [user, ...]}
+    con soli utenti che seguono la fonte. Una sola query per gli override."""
+    overrides = _overrides()
+    sources = get_sources()
+    out = {s["id"]: [] for s in sources}
+    for user in users:
+        user_over = overrides.get(user["telegram_id"], {})
+        for s in sources:
+            if _effective(s, user_over.get(s["id"])):
+                out[s["id"]].append(user)
+    return out

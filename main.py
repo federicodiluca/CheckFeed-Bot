@@ -1,6 +1,7 @@
 from bot.config_loader import get_config
 from bot.db import init_db
 from bot.db_news import cleanup_old_news
+from bot.db_sources import sync_config_sources
 from bot.news_fetcher import fetch_news
 from bot.report_generator import generate_report
 from bot.logger import log, cleanup_logs
@@ -19,7 +20,8 @@ DAILY_REPORT_TIME = CONFIG["daily_report_time"]
 CLEANUP_DAYS = CONFIG["data_retention_days"]
 POLLING_MINUTES = CONFIG["polling_minutes"]
 
-log(f"🔄 Servizio avviato su {MACHINE_NAME}.")
+n_sources = sync_config_sources(CONFIG["sites"])
+log(f"🔄 Servizio avviato su {MACHINE_NAME} ({n_sources} fonti da config).")
 
 # === Scheduler ===
 schedule.every(POLLING_MINUTES).minutes.do(fetch_news)

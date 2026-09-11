@@ -24,7 +24,9 @@ Un bot in **Python + Docker** che:
 ✅ **Supporto parole composte** con spazi nelle keyword  
 ✅ **Controllo duplicati intelligente** (case-insensitive)  
 ✅ **Contenuto completo** delle news memorizzato nel DB  
-✅ **Comandi interattivi** con feedback dettagliato
+✅ **Comandi interattivi** con feedback dettagliato  
+✅ **Fonti per utente**: ognuno sceglie quali fonti seguire  
+✅ **Fonti custom** aggiunte da Telegram (RSS o pagine HTML senza feed, es. siti MIM)
 
 ---
 
@@ -63,7 +65,7 @@ Esempio base:
 
 * `telegram_token` → token del bot (ottenuto da [BotFather](https://core.telegram.org/bots#botfather))
 * `machine_name` → nome della macchina o del container
-* `sites` → elenco dei feed RSS da monitorare
+* `sites` → fonti di base, seguite da tutti gli utenti (feed RSS; opzionale, altre fonti si aggiungono da Telegram)
 * `daily_report_time` → orario (HH:MM) del report giornaliero
 * `polling_minutes` → intervallo tra i controlli dei feed
 * `data_retention_days` → giorni di conservazione di log e news
@@ -91,6 +93,20 @@ Ogni utente che invia `/start` viene registrato automaticamente e può:
 
 Niente più config manuale: ogni utente Telegram ha il proprio profilo salvato in automatico.
 
+### 📡 Fonti per utente
+
+Le fonti vivono nel database (tabella `sources`); quelle di `config.json` vengono sincronizzate a ogni avvio.
+
+* Di default ogni utente segue **tutte** le fonti di `config.json`; con `/unfollow` e `/follow` sceglie quali tenere.
+* Con `/addsource URL [nome]` un utente aggiunge una fonte nuova. Il bot verifica che sia leggibile:
+  1. è un **feed RSS/Atom**? → usato direttamente;
+  2. è una **pagina HTML che dichiara un feed** (`<link rel="alternate" type="application/rss+xml">`, tipico di WordPress)? → usa quel feed;
+  3. altrimenti prova lo **scraping** della pagina come lista di notizie (`<article>` o titoli `h2/h3` con link, data italiana come "11 settembre 2026") — è il caso dei siti MIM/Liferay senza RSS;
+  4. se non trova almeno 3 notizie, rifiuta la fonte.
+* La fonte custom è seguita subito da chi l'ha aggiunta; gli altri la vedono in `/sources` e possono attivarla con `/follow`.
+* Alla prima lettura le notizie già pubblicate vengono salvate **senza notifiche**, per non ricevere una raffica di alert.
+* Notifiche, report giornaliero e `/latest` includono solo le fonti che l'utente segue.
+
 ---
 
 ## 💬 Comandi disponibili
@@ -105,7 +121,29 @@ Niente più config manuale: ogni utente Telegram ha il proprio profilo salvato i
 | `/fetch`                                    | Aggiorna manualmente i feed                           |
 | `/report`                                   | Genera e invia il report giornaliero                  |
 | `/latest [n]`                               | Mostra le ultime *n* notizie (default: 5, max 50)     |
+| `/sources`                                  | Elenco fonti con ✅/❌ e numero per `/follow`          |
+| `/follow 1, 3` / `/follow all`              | Segui le fonti indicate                               |
+| `/unfollow 2` / `/unfollow all`             | Smetti di seguire le fonti indicate                   |
+| `/addsource URL [nome]`                     | Aggiunge una fonte (RSS o pagina notizie) con verifica |
+| `/removesource n`                           | Rimuove una fonte aggiunta da te                      |
 | `/commands` (o `/help`)                     | Elenco rapido di tutti i comandi disponibili          |
+
+### 📡 **Esempio: aggiungere fonti**
+
+```
+/addsource https://fc.istruzioneer.gov.it/tutte-le-notizie/
+✅ Fonte aggiunta: Ufficio VII – sede di Forlì-Cesena (n. 4)
+📎 Tipo: feed RSS
+🔗 https://fc.istruzioneer.gov.it/feed/
+📰 Notizie trovate: 10 (salvate 10 nuove, senza notifica)
+
+/addsource https://www.mim.gov.it/web/miur-usr-marche/novit%C3%A0-dall-usr-marche USR Marche
+✅ Fonte aggiunta: USR Marche (n. 5)
+📎 Tipo: pagina HTML (scraping)
+
+/unfollow 2
+✅ Non segui più: USP Rimini
+```
 
 ### 🔍 **Ricerca keyword migliorata**
 - Le keyword ora usano **ricerca esatta** delle parole

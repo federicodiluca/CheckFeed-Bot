@@ -5,7 +5,7 @@ import os
 # d'ambiente CHECKFEED_CONFIG (utile per test e deploy alternativi).
 CONFIG_FILE = os.environ.get("CHECKFEED_CONFIG", "config.json")
 
-REQUIRED_KEYS = ("telegram_token", "sites")
+REQUIRED_KEYS = ("telegram_token",)
 
 DEFAULTS = {
     "machine_name": "CheckFeed",
@@ -13,6 +13,7 @@ DEFAULTS = {
     "polling_minutes": 10,
     "data_retention_days": 7,
     "disable_web_page_preview": True,
+    "sites": [],
 }
 
 _cache = None
@@ -32,6 +33,7 @@ def load_config(path=None):
     missing = [k for k in REQUIRED_KEYS if not cfg.get(k)]
     if missing:
         raise ValueError(f"❌ Configurazione incompleta: campi mancanti {', '.join(missing)}")
+    cfg.setdefault("sites", [])
     if not isinstance(cfg["sites"], list):
         raise ValueError("❌ Configurazione non valida: 'sites' deve essere una lista")
     for site in cfg["sites"]:

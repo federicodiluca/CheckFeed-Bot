@@ -1,9 +1,12 @@
 from datetime import datetime
 from bot.db_news import get_today_news
+from bot.db_sources import get_followed_source_ids
 from bot.db_user import get_users
 from bot.logger import log
 from bot.telegram import send_long_message
 from bot.utils import cleanHTMLPreview, escape_html, format_local_datetime
+
+NO_NEWS_MESSAGE = "🗓️ Nessuna notizia per oggi dalle fonti che segui."
 
 
 def build_report(today_news):
@@ -23,37 +26,36 @@ def build_report(today_news):
     return "\n".join(lines).strip()
 
 
-def generate_report(target_chat_id=None):
-    today_news = get_today_news()
-    text = build_report(today_news)
-
+def send_user_report(telegram_id):
+    """Invia a un utente il report delle news di oggi dalle fonti che segue.
+    Ritorna il numero di notizie incluse."""
+    news = get_today_news(source_ids=get_followed_source_ids(telegram_id))
+    text = build_report(news)
     if text is None:
-        msg = "🗓️ Nessuna notizia per oggi."
-        if target_chat_id:
-            send_long_message(msg, chat_id=target_chat_id, parse_mode="HTML")
-        else:
-            for u in get_users():
-                send_long_message(msg, chat_id=u["telegram_id"], parse_mode="HTML")
-        log("🗓️ Nessuna notizia per oggi.")
-        return
+        send_long_message(NO_NEWS_MESSAGE, chat_id=telegram_id, parse_mode="HTML")
+        return 0
+    send_long_message(text, chat_id=telegram_id, parse_mode="HTML")
+    return len(news)
 
-    # log diagnostico prima dell'invio
-    log(f"🔎 Report length: {len(text)} chars; preview: {text[:200]!r}")
 
+def generate_report(target_chat_id=None):
+    """Report giornaliero: a un singolo utente (target_chat_id) o a tutti gli attivi.
+    Ogni utente riceve solo le notizie delle fonti che segue."""
     if target_chat_id:
-        send_long_message(text, chat_id=target_chat_id, parse_mode="HTML")
-        log(f"📄 Report inviato manualmente a {target_chat_id}.")
+        count = send_user_report(target_chat_id)
+        log(f"📄 Report inviato manualmente a {target_chat_id} ({count} notizie).")
         return
 
     users = get_users()
     if not users:
         log("⚠️ Nessun utente attivo per l'invio del report.")
         return
+
     sent = 0
     for u in users:
         try:
-            send_long_message(text, chat_id=u["telegram_id"], parse_mode="HTML")
+            send_user_report(u["telegram_id"])
             sent += 1
         except Exception as e:
             log(f"⚠️ Errore nell'invio report a {u['telegram_id']}: {e}")
-    log(f"📄 Report Telegram inviato a {sent} utenti ({len(today_news)} notizie).")
+    log(f"📄 Report Telegram inviato a {sent} utenti.")
