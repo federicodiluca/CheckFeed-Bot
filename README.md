@@ -52,6 +52,11 @@ Esempio base:
     {
       "name": "USR Emilia Romagna",
       "url": "https://www.istruzioneer.gov.it/tutte-le-notizie/feed/"
+    },
+    {
+      "name": "USR Marche",
+      "url": "https://www.mim.gov.it/web/miur-usr-marche/novit%C3%A0-dall-usr-marche",
+      "type": "html"
     }
   ],
   "daily_report_time": "18:00",
@@ -65,7 +70,11 @@ Esempio base:
 
 * `telegram_token` → token del bot (ottenuto da [BotFather](https://core.telegram.org/bots#botfather))
 * `machine_name` → nome della macchina o del container
-* `sites` → fonti di base, seguite da tutti gli utenti (feed RSS; opzionale, altre fonti si aggiungono da Telegram)
+* `sites` → fonti di base, visibili a tutti gli utenti (opzionale, altre fonti si aggiungono da Telegram). Ogni voce:
+  * `name` → nome mostrato nelle notifiche e in `/sources`
+  * `url` → feed RSS/Atom, oppure pagina HTML "lista notizie" se `type` è `html`
+  * `type` → `rss` (default) o `html` (scraping della pagina, per i siti senza feed come quelli MIM/Liferay)
+  * `default_follow` → `true` (default) seguita da tutti salvo `/unfollow`; `false` disponibile ma da attivare con `/follow`
 * `daily_report_time` → orario (HH:MM) del report giornaliero
 * `polling_minutes` → intervallo tra i controlli dei feed
 * `data_retention_days` → giorni di conservazione di log e news

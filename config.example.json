@@ -9,6 +9,15 @@
     {
       "name": "USP Rimini",
       "url": "https://rn.istruzioneer.gov.it/tutte-le-notizie/feed/"
+    },
+    {
+      "name": "USR Forlì-Cesena",
+      "url": "https://fc.istruzioneer.gov.it/feed/"
+    },
+    {
+      "name": "USR Marche",
+      "url": "https://www.mim.gov.it/web/miur-usr-marche/novit%C3%A0-dall-usr-marche",
+      "type": "html"
     }
   ],
   "daily_report_time": "18:00",

@@ -25,6 +25,15 @@ def test_sync_creates_config_sources_with_default_follow():
     ]
 
 
+def test_sync_returns_count_and_newly_created_ids():
+    count, created = sync_config_sources([
+        {"name": "Feed Uno", "url": "https://example.org/uno/feed/"},
+        {"name": "Nuova", "url": "https://example.org/nuova/feed/"},
+    ])
+    assert count == 2 and created == [3]
+    assert sync_config_sources([{"name": "Nuova", "url": "https://example.org/nuova/feed/"}]) == (1, [])
+
+
 def test_sync_is_idempotent_updates_names_and_disables_removed():
     sync_config_sources([{"name": "Uno rinominato", "url": "https://example.org/uno/feed/"}])
     enabled = get_sources()
@@ -113,3 +122,19 @@ def test_news_filter_by_source_ids():
     assert {r["title"] for r in get_recent_news(source_ids={1})} == {"a"}
     assert {r["title"] for r in get_recent_news(source_ids={1, 2})} == {"a", "b"}
     assert get_recent_news(source_ids=set()) == []
+
+
+def test_sync_applies_type_and_default_follow_from_config():
+    sync_config_sources([
+        {"name": "Feed Uno", "url": "https://example.org/uno/feed/"},
+        {"name": "Marche", "url": "https://mim.example/novita", "type": "html", "default_follow": False},
+    ])
+    marche = get_source_by_url("https://mim.example/novita")
+    assert marche["type"] == "html" and marche["origin"] == "config" and marche["default_follow"] is False
+    add_user(1)
+    assert get_followed_source_ids(1) == {1}          # opt-in: non seguita di default
+    set_user_source(1, marche["id"], True)
+    assert marche["id"] in get_followed_source_ids(1)
+    # cambio in config → aggiornato al sync successivo
+    sync_config_sources([{"name": "Marche", "url": "https://mim.example/novita", "type": "html", "default_follow": True}])
+    assert get_source_by_url("https://mim.example/novita")["default_follow"] is True

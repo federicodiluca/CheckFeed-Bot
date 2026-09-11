@@ -1,8 +1,8 @@
 from bot.config_loader import get_config
 from bot.db import init_db
 from bot.db_news import cleanup_old_news
-from bot.db_sources import sync_config_sources
-from bot.news_fetcher import fetch_news
+from bot.db_sources import get_source, sync_config_sources
+from bot.news_fetcher import fetch_news, fetch_source
 from bot.report_generator import generate_report
 from bot.logger import log, cleanup_logs
 from bot.telegram_commands import start_telegram_listener, build_help_message
@@ -20,8 +20,18 @@ DAILY_REPORT_TIME = CONFIG["daily_report_time"]
 CLEANUP_DAYS = CONFIG["data_retention_days"]
 POLLING_MINUTES = CONFIG["polling_minutes"]
 
-n_sources = sync_config_sources(CONFIG["sites"])
+n_sources, new_source_ids = sync_config_sources(CONFIG["sites"])
 log(f"🔄 Servizio avviato su {MACHINE_NAME} ({n_sources} fonti da config).")
+
+# Fonti appena aggiunte in config: prima lettura senza notifiche, per non
+# inviare una raffica di alert sulle notizie già pubblicate.
+for sid in new_source_ids:
+    source = get_source(sid)
+    try:
+        seeded = fetch_source(source, notify=False)
+        log(f"🌱 Fonte nuova '{source['name']}': salvate {seeded} notizie senza notifica.")
+    except Exception as e:
+        log(f"❌ Errore nella lettura iniziale di '{source['name']}': {e}")
 
 # === Scheduler ===
 schedule.every(POLLING_MINUTES).minutes.do(fetch_news)

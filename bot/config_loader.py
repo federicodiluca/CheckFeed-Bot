@@ -6,6 +6,7 @@ import os
 CONFIG_FILE = os.environ.get("CHECKFEED_CONFIG", "config.json")
 
 REQUIRED_KEYS = ("telegram_token",)
+SITE_TYPES = ("rss", "html")  # rss = feed RSS/Atom; html = pagina "lista notizie" da scrapare
 
 DEFAULTS = {
     "machine_name": "CheckFeed",
@@ -40,6 +41,10 @@ def load_config(path=None):
         if not isinstance(site, dict) or not site.get("url"):
             raise ValueError(f"❌ Configurazione non valida: feed senza 'url' ({site!r})")
         site.setdefault("name", site["url"])
+        site["type"] = str(site.get("type") or "rss").lower()
+        if site["type"] not in SITE_TYPES:
+            raise ValueError(f"❌ Configurazione non valida: type '{site['type']}' per {site['url']} (ammessi: {', '.join(SITE_TYPES)})")
+        site["default_follow"] = bool(site.get("default_follow", True))
 
     for key, value in DEFAULTS.items():
         cfg.setdefault(key, value)

@@ -17,26 +17,31 @@ def _row_to_source(row):
 def sync_config_sources(sites):
     """Allinea le fonti di config.json con la tabella sources.
     Le fonti di config non più presenti vengono disabilitate (non cancellate,
-    così le news collegate restano consistenti). Ritorna il numero di fonti attive da config."""
+    così le news collegate restano consistenti).
+    Ritorna (numero di fonti da config, lista degli id delle fonti create ora)."""
     conn = get_conn()
     cur = conn.cursor()
     urls = []
+    created_ids = []
     for site in sites:
         url = site["url"].strip()
         name = (site.get("name") or url).strip()
+        source_type = site.get("type") or "rss"
+        default_follow = 1 if site.get("default_follow", True) else 0
         urls.append(url)
         cur.execute("SELECT id FROM sources WHERE url=?", (url,))
         row = cur.fetchone()
         if row:
             cur.execute(
-                "UPDATE sources SET name=?, origin='config', enabled=1, default_follow=1 WHERE id=?",
-                (name, row["id"]),
+                "UPDATE sources SET name=?, type=?, origin='config', enabled=1, default_follow=? WHERE id=?",
+                (name, source_type, default_follow, row["id"]),
             )
         else:
             cur.execute(
-                "INSERT INTO sources (name, url, type, origin, enabled, default_follow) VALUES (?, ?, 'rss', 'config', 1, 1)",
-                (name, url),
+                "INSERT INTO sources (name, url, type, origin, enabled, default_follow) VALUES (?, ?, ?, 'config', 1, ?)",
+                (name, url, source_type, default_follow),
             )
+            created_ids.append(cur.lastrowid)
     if urls:
         placeholders = ",".join("?" * len(urls))
         cur.execute(f"UPDATE sources SET enabled=0 WHERE origin='config' AND url NOT IN ({placeholders})", urls)
@@ -50,7 +55,7 @@ def sync_config_sources(sites):
     """)
     conn.commit()
     conn.close()
-    return len(urls)
+    return len(urls), created_ids
 
 
 def get_sources(enabled_only=True):
