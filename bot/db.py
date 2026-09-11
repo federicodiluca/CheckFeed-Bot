@@ -1,6 +1,9 @@
+import os
 import sqlite3
 
-DB_PATH = "data/checkfeed.db"
+# Percorso del database: sovrascrivibile con CHECKFEED_DB_PATH.
+DB_PATH = os.environ.get("CHECKFEED_DB_PATH", "data/checkfeed.db")
+
 
 def get_conn():
     conn = sqlite3.connect(DB_PATH)
@@ -9,6 +12,10 @@ def get_conn():
 
 
 def init_db():
+    parent = os.path.dirname(DB_PATH)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+
     conn = get_conn()
     cur = conn.cursor()
 

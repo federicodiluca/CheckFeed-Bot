@@ -69,6 +69,14 @@ Esempio base:
 * `data_retention_days` → giorni di conservazione di log e news
 * `disable_web_page_preview` → nasconde le anteprime dei link (opzionale)
 
+Solo `telegram_token` e `sites` sono obbligatori; gli altri campi hanno un default.
+
+**Variabili d'ambiente (opzionali):**
+
+* `CHECKFEED_CONFIG` → percorso del file di configurazione (default `config.json`)
+* `CHECKFEED_DB_PATH` → percorso del database SQLite (default `data/checkfeed.db`)
+* `CHECKFEED_LOG_DIR` → cartella dei log (default `data/logs`)
+
 ---
 
 ## 👥 Multi–utente con SQLite
@@ -96,8 +104,8 @@ Niente più config manuale: ogni utente Telegram ha il proprio profilo salvato i
 | `/keywords`                                 | Mostra le tue keyword attualmente attive              |
 | `/fetch`                                    | Aggiorna manualmente i feed                           |
 | `/report`                                   | Genera e invia il report giornaliero                  |
-| `/latest [n]`                               | Mostra le ultime *n* notizie (default: 5)             |
-| `/commands`                                 | Elenco rapido di tutti i comandi disponibili          |
+| `/latest [n]`                               | Mostra le ultime *n* notizie (default: 5, max 50)     |
+| `/commands` (o `/help`)                     | Elenco rapido di tutti i comandi disponibili          |
 
 ### 🔍 **Ricerca keyword migliorata**
 - Le keyword ora usano **ricerca esatta** delle parole
@@ -128,6 +136,20 @@ All'avvio, il bot invia automaticamente un messaggio di **recap con tutti i coma
    ```
 
 I dati persistono in `data/`, inclusi log, news e database utenti.
+`config.json` viene montato in sola lettura nel container: dopo una modifica basta `docker-compose restart`, senza rebuild.
+
+---
+
+## 🧪 Test
+
+```bash
+python -m venv .venv
+.venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
+pip install -r requirements-dev.txt
+pytest
+```
+
+I test girano su un database e una configurazione temporanei e non effettuano alcuna chiamata di rete.
 
 ---
 
@@ -141,7 +163,7 @@ Concorso docenti AM2A – graduatoria aggiornata
 https://www.istruzioneer.gov.it/...
 ```
 
-**� Esempi di comandi**
+**💬 Esempi di comandi**
 
 ```
 /setkeywords scuola, docenti, GRADUATORIA FINALE
@@ -158,12 +180,14 @@ https://www.istruzioneer.gov.it/...
 • GRADUATORIA FINALE
 ```
 
-**�🗓️ Report giornaliero**
+**🗓️ Report giornaliero**
 
 ```
-📢 Report del 2025-10-05 (3 notizie)
-- Titolo 1 (USR Emilia Romagna)
-- Titolo 2 (Miur)
+📢 Report del 05/10/2025 — 3 notizie trovate
+
+🗞️ USR Emilia Romagna — 05/10/2025 10:14
+Titolo 1
+Anteprima del contenuto...
 ```
 
 **🧹 Log giornalieri**

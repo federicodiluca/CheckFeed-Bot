@@ -5,10 +5,11 @@ services:
     restart: unless-stopped
     volumes:
       - ./data:/usr/src/app/data
-      - ./bot/config.json:/usr/src/app/bot/config.json:ro
+      - ./config.json:/usr/src/app/config.json:ro
     environment:
       - TZ=Europe/Rome
       - PYTHONPATH=/usr/src/app
+      - PYTHONUNBUFFERED=1
     networks:
       - checkfeed-net
 

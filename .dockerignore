@@ -1,0 +1,15 @@
+.git
+.gitignore
+.venv
+venv
+env
+__pycache__
+*.py[cod]
+data
+logs
+tests
+.claude
+.vscode
+.idea
+.DS_Store
+config.json
