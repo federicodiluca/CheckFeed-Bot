@@ -30,6 +30,7 @@ di default, alert immediato opzionale).
 - [ ] Pubblicità in pagina (solo quando ci sarà trazione)
 - [ ] Deploy (Hetzner + Coolify valutato; oppure free tier Google)
 - [x] Rename del repo → `school-feed-monitor` (fatto)
+- [ ] Rename degli identificatori interni (`CHECKFEED_*`, `data/checkfeed.db`, container Docker, package `bot/`) — con migrazione/compatibilità per `.env` e deploy esistenti
 
 ## Fuori scope (deciso)
 
