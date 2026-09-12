@@ -1,3 +1,4 @@
+import bot.channels.telegram_channel as telegram_channel
 import bot.news_fetcher as news_fetcher
 from bot.db_news import get_recent_news
 from bot.db_sources import add_user_source, get_source, set_user_source
@@ -103,7 +104,7 @@ def test_notification_error_does_not_abort_fetch(fake_sources, monkeypatch):
     def failing_send(*a, **k):
         raise RuntimeError("telegram down")
 
-    monkeypatch.setattr(news_fetcher, "send_message", failing_send)
+    monkeypatch.setattr(telegram_channel, "send_message", failing_send)
     fake_sources[UNO] = rss([{"title": "ok 1", "link": "https://x/1"}, {"title": "ok 2", "link": "https://x/2"}])
 
     assert news_fetcher.fetch_news() == 2

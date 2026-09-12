@@ -36,7 +36,7 @@ os.environ["CHECKFEED_LOG_DIR"] = os.path.join(_SESSION_DIR, "logs")
 import bot.db as db  # noqa: E402
 import bot.telegram as telegram  # noqa: E402
 import bot.telegram_commands as telegram_commands  # noqa: E402
-import bot.news_fetcher as news_fetcher  # noqa: E402
+import bot.channels.telegram_channel as telegram_channel  # noqa: E402
 import bot.source_parser as source_parser  # noqa: E402
 from bot.db_sources import sync_config_sources  # noqa: E402
 
@@ -112,6 +112,6 @@ def sent_messages(monkeypatch):
     # send_long_message di bot.telegram chiama send_message dello stesso modulo
     monkeypatch.setattr(telegram, "send_message", fake_send)
     monkeypatch.setattr(telegram_commands, "send_message", fake_send)
-    monkeypatch.setattr(news_fetcher, "send_message", fake_send)
+    monkeypatch.setattr(telegram_channel, "send_message", fake_send)
     monkeypatch.setattr(telegram, "SLEEP_BETWEEN_MSGS", 0)
     return messages
