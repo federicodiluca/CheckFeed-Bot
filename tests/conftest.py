@@ -31,6 +31,7 @@ with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
 os.environ["CHECKFEED_CONFIG"] = _CONFIG_PATH
 os.environ["CHECKFEED_DB_PATH"] = os.path.join(_SESSION_DIR, "test.db")
 os.environ["CHECKFEED_LOG_DIR"] = os.path.join(_SESSION_DIR, "logs")
+os.environ["CHECKFEED_ENV_FILE"] = os.path.join(_SESSION_DIR, "no.env")  # i test non leggono il .env reale
 
 # Solo ora è sicuro importare i moduli del bot
 import bot.db as db  # noqa: E402

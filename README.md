@@ -88,6 +88,23 @@ Solo `telegram_token` e `sites` sono obbligatori; gli altri campi hanno un defau
 * `CHECKFEED_DB_PATH` → percorso del database SQLite (default `data/checkfeed.db`)
 * `CHECKFEED_LOG_DIR` → cartella dei log (default `data/logs`)
 
+### 3️⃣ Email (opzionale)
+
+Oltre a Telegram, le notifiche possono arrivare via **email**. Copia `.env.example` in `.env`
+(ignorato da git: **non committare mai credenziali**) e scegli il backend con `EMAIL_BACKEND`:
+
+* `smtp` → un server SMTP qualsiasi. Consigliato **Brevo** (piano gratuito, azienda UE):
+  `SMTP_HOST=smtp-relay.brevo.com`, `SMTP_PORT=587`, `SMTP_USER`/`SMTP_PASSWORD` dal pannello *SMTP & API*
+* `resend` → API di [Resend](https://resend.com) con `RESEND_API_KEY`
+* `none` → disabilitato (default): le email vengono solo loggate
+
+In tutti i casi serve `EMAIL_FROM` (mittente verificato presso il provider). Per verificare la configurazione:
+
+```bash
+python scripts/send_test_email.py tua@email.it          # alert di prova
+python scripts/send_test_email.py tua@email.it digest   # report di prova
+```
+
 ---
 
 ## 👥 Multi–utente con SQLite

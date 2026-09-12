@@ -1,11 +1,14 @@
 """Dispatcher delle notifiche: decide su quali canali raggiungere un utente e
 delega l'invio al modulo del canale. Il core (fetch/match/report) parla solo
 con questo modulo, mai direttamente con Telegram o altri canali."""
-from bot.channels import telegram_channel
+from bot.channels import email_channel, telegram_channel
 from bot.logger import log
 
 # Registro dei canali disponibili: nome -> modulo con send_alert / send_digest.
-CHANNELS = {telegram_channel.NAME: telegram_channel}
+CHANNELS = {
+    telegram_channel.NAME: telegram_channel,
+    email_channel.NAME: email_channel,
+}
 
 
 def user_label(user):
@@ -13,10 +16,14 @@ def user_label(user):
 
 
 def channels_for(user):
-    """Canali su cui l'utente vuole essere raggiunto. Per ora: Telegram se ha un telegram_id."""
+    """Canali su cui l'utente vuole essere raggiunto, in base a identità e preferenze:
+    Telegram se ha un telegram_id e notify_telegram (default True per gli utenti storici),
+    email se ha un'email e notify_email."""
     names = []
-    if user.get("telegram_id"):
+    if user.get("telegram_id") and user.get("notify_telegram", True):
         names.append(telegram_channel.NAME)
+    if user.get("email") and user.get("notify_email", False):
+        names.append(email_channel.NAME)
     return names
 
 
