@@ -12,7 +12,7 @@ from bot.env import env
 from bot.mailer import EmailError, is_enabled, send_email
 
 SAMPLE = {
-    "title": "Email di prova da CheckFeed",
+    "title": "Email di prova da School Feed Monitor",
     "link": "https://example.org/prova",
     "source": "Fonte di prova",
     "content": "<p>Se leggi questo messaggio il backend email funziona.</p>",

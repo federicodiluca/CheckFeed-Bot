@@ -48,7 +48,7 @@ def build_help_message(telegram_id=None):
         feed_list = "\n".join(f"• {escape_html(s['name'])}" for s in get_sources())
     feed_list = feed_list or "⚠️ Nessuna fonte configurata."
     return f"""
-🤖 <b>CheckFeed Bot</b> — servizio attivo.
+🤖 <b>School Feed Monitor</b> — servizio attivo.
 
 <b>Comandi disponibili:</b>
 /start — registra l'utente e mostra questo messaggio

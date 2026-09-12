@@ -6,7 +6,7 @@ from bot.mailer import send_email
 from bot.utils import cleanHTMLPreview, escape_html, format_local_datetime, strip_html
 
 NAME = "email"
-APP_NAME = "CheckFeed"
+APP_NAME = "School Feed Monitor"
 PREVIEW_LEN = 300
 
 _STYLE = (

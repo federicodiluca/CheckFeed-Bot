@@ -29,7 +29,7 @@ di default, alert immediato opzionale).
 - [ ] Verifica email (double opt-in) prima di attivare il canale email
 - [ ] Pubblicità in pagina (solo quando ci sarà trazione)
 - [ ] Deploy (Hetzner + Coolify valutato; oppure free tier Google)
-- [ ] Rename del repo
+- [x] Rename del repo → `school-feed-monitor` (fatto)
 
 ## Fuori scope (deciso)
 

@@ -149,7 +149,7 @@ NEWS = {"title": "Concorso <docenti> & ATA", "link": "https://x/1?a=1&b=2", "sou
 def test_format_alert_escapes_and_includes_keywords(email_env):
     email_env(APP_BASE_URL="https://app.example/")
     subject, html, text = email_channel.format_alert(NEWS, ["docenti", "ata"])
-    assert subject == "[CheckFeed] Concorso <docenti> & ATA"
+    assert subject == "[School Feed Monitor] Concorso <docenti> & ATA"
     assert "Concorso &lt;docenti&gt; &amp; ATA" in html and "USR &lt;ER&gt;" in html
     assert 'href="https://x/1?a=1&amp;b=2"' in html and "Testo breve" in html
     assert "<b>docenti, ata</b>" in html
@@ -175,7 +175,7 @@ def test_email_channel_sends_via_mailer(monkeypatch):
     email_channel.send_alert(user, NEWS, ["docenti"])
     email_channel.send_digest(user, [])
     assert [s[0] for s in sent] == ["prof@scuola.it"] * 2
-    assert sent[0][1].startswith("[CheckFeed] Concorso") and "Report" in sent[1][1]
+    assert sent[0][1].startswith("[School Feed Monitor] Concorso") and "Report" in sent[1][1]
 
 
 # --- notifier: scelta dei canali --------------------------------------------------

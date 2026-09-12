@@ -1,4 +1,6 @@
-# 📰 Telegram News Bot
+# 🏫 School Feed Monitor
+
+> Aggiornamenti dal mondo scuola (USR, USP, MIM…) filtrati per parole chiave, via Telegram ed email.
 
 Un bot in **Python + Docker** che:
 
@@ -280,6 +282,6 @@ Creato per sviluppatori e scuole che vogliono restare aggiornati automaticamente
 
 ## 💪 Contributors
 
-<a href="https://github.com/federicodiluca/CheckFeed-Bot/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=federicodiluca/CheckFeed-Bot" />
+<a href="https://github.com/federicodiluca/school-feed-monitor/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=federicodiluca/school-feed-monitor" />
 </a>

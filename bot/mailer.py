@@ -5,7 +5,7 @@
     resend  -> API HTTP di Resend: RESEND_API_KEY
     none    -> disabilitato: le email vengono solo loggate (default se non configurato)
 
-Comuni: EMAIL_FROM (es. "CheckFeed <noreply@tuodominio.it>"), EMAIL_REPLY_TO (opz.).
+Comuni: EMAIL_FROM (es. "School Feed Monitor <noreply@tuodominio.it>"), EMAIL_REPLY_TO (opz.).
 Le credenziali stanno solo nell'ambiente / .env, mai nel repo.
 """
 import smtplib
