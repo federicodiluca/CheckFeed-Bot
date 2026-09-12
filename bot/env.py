@@ -26,6 +26,8 @@ def load_env(path=None, override=False):
             value = value.strip()
             if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
                 value = value[1:-1]
+            else:
+                value = value.split(" #", 1)[0].rstrip()  # commento in coda: KEY=valore  # nota
             if key and (override or key not in os.environ):
                 os.environ[key] = value
                 count += 1

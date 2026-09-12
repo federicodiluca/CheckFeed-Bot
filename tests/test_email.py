@@ -53,11 +53,11 @@ class FakeSMTP:
 
 def test_load_env_parses_file_without_overriding(tmp_path, monkeypatch):
     f = tmp_path / ".env"
-    f.write_text('# commento\nA=1\nB="due parole"\nC=\'x\'\nEXISTING=new\nbroken\n', encoding="utf-8")
+    f.write_text('# commento\nA=1   # nota in coda\nB="due parole # no"\nC=\'x\'\nEXISTING=new\nbroken\n', encoding="utf-8")
     monkeypatch.setenv("EXISTING", "old")
     monkeypatch.delenv("A", raising=False); monkeypatch.delenv("B", raising=False); monkeypatch.delenv("C", raising=False)
     assert load_env(str(f)) == 3
-    assert os.environ["A"] == "1" and os.environ["B"] == "due parole" and os.environ["C"] == "x"
+    assert os.environ["A"] == "1" and os.environ["B"] == "due parole # no" and os.environ["C"] == "x"
     assert os.environ["EXISTING"] == "old"
     assert load_env(str(tmp_path / "missing")) == 0
 
