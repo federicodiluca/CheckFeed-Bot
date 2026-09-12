@@ -26,7 +26,7 @@ di default, alert immediato opzionale).
 
 ## Dopo l'MVP
 
-- [ ] Catalogo completo fonti italiane: tutti gli USR regionali e gli USP provinciali
+- [ ] **Catalogo completo fonti italiane — requisito di base prima dell'apertura al pubblico**: tutti i **20 USR regionali** e tutti gli **USP di ogni provincia** (~100) devono essere già presenti, con URL controllato a mano (feed RSS o pagina HTML) e **coperti da test** (fixture con un campione reale della pagina/feed di ogni fonte, così un cambio di struttura viene rilevato). Da fare in più passate: raccolta URL → verifica automatica con `detect_source` → revisione manuale dei casi dubbi → test → `config.example.json`/seed nel DB con `default_follow` sensato (utente sceglie regione/provincia)
 - [ ] Verifica email (double opt-in) prima di attivare il canale email
 - [ ] Pubblicità in pagina (solo quando ci sarà trazione)
 - [ ] Deploy (Hetzner + Coolify valutato; oppure free tier Google)
