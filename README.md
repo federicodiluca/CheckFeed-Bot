@@ -202,7 +202,13 @@ python web.py            # sviluppo: http://127.0.0.1:5000  (FLASK_DEBUG=1 per l
 Pagine: home, registrazione (email + password, consenso privacy con versione e data), accesso, account
 (cambio password, **export dei dati**, **revoca del consenso**, **cancellazione definitiva**), privacy e termini.
 `robots.txt` e `sitemap.xml` sono generati; le pagine riservate sono `noindex`. Tema chiaro/scuro automatico con toggle.
-La gestione delle preferenze (fonti, parole chiave, canali, frequenza) e il collegamento a Telegram arrivano nel prossimo step.
+
+**Preferenze** (`/preferenze`): fonti seguite, parole chiave, canali (email/Telegram), frequenza (solo riepilogo
+oppure riepilogo + avvisi immediati), orario del riepilogo, aggiunta di nuove fonti con verifica.
+**Telegram**: dalla pagina preferenze si genera un codice e lo si invia al bot con `/link CODICE`; se quella chat
+usava già il bot, parole chiave e fonti vengono unite all'account web.
+**Accedi con Google**: opzionale, attivo se `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` sono impostati
+(anche in questo caso il consenso privacy viene chiesto prima di creare l'account).
 
 ---
 

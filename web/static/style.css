@@ -71,6 +71,18 @@ button.icon { background: none; border: 1px solid var(--border); border-radius: 
 form.inline { display: inline; }
 form.danger { border-top: 1px solid var(--border); margin-top: 16px; padding-top: 8px; }
 
+.or { text-align: center; color: var(--muted); max-width: 560px; }
+fieldset { border: 1px solid var(--border); border-radius: 6px; margin: 12px 0; padding: 8px 12px; }
+legend { font-weight: 600; }
+.sources { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 16px; }
+.sources li { break-inside: avoid; }
+.sources label { font-weight: 400; margin: 4px 0; display: flex; gap: 8px; align-items: flex-start; }
+textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); font-size: 1rem; font-family: inherit; }
+input[type="url"], input[type="time"] { padding: 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); font-size: 1rem; }
+input[type="url"] { width: 100%; }
+.code { font-family: ui-monospace, monospace; font-size: 1.6rem; letter-spacing: .2em; background: var(--bg); padding: 8px 12px; border-radius: 6px; display: inline-block; }
+@media (max-width: 600px) { .sources { columns: 1; } }
+
 .flashes { list-style: none; padding: 0; margin: 0 0 16px; }
 .flash { padding: 10px 12px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
 .flash.success { background: var(--success-bg); }

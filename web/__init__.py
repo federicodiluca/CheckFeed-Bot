@@ -2,9 +2,11 @@
 
 Processo separato dal bot Telegram, stesso database SQLite (WAL).
 Configurazione via ambiente / .env:
-    SECRET_KEY      chiave per firmare i cookie di sessione (obbligatoria fuori dal debug)
-    APP_BASE_URL    URL pubblico (canonical, sitemap, link nelle email)
-    FLASK_DEBUG     1 per il server di sviluppo
+    SECRET_KEY              chiave per firmare i cookie di sessione (obbligatoria fuori dal debug)
+    APP_BASE_URL            URL pubblico (canonical, sitemap, link nelle email)
+    FLASK_DEBUG             1 per il server di sviluppo
+    GOOGLE_CLIENT_ID/SECRET credenziali OAuth per "Accedi con Google" (opzionali)
+    TELEGRAM_BOT_USERNAME   username del bot (senza @) per il link "apri il bot" nelle preferenze
 """
 import os
 import secrets
@@ -13,8 +15,9 @@ from flask import Flask, render_template, request
 
 from bot.db import init_db
 from bot.env import env, env_bool
-from web import seo, security
+from web import google_auth, seo, security
 from web.auth import bp as auth_bp
+from web.preferences import bp as prefs_bp
 
 APP_NAME = "School Feed Monitor"
 PRIVACY_VERSION = "2026-09-12"   # aggiorna quando cambia l'informativa: gli utenti dovranno riaccettarla
@@ -40,6 +43,9 @@ def create_app(test_config=None):
         SESSION_COOKIE_SECURE=(env("APP_BASE_URL") or "").startswith("https://"),
         PERMANENT_SESSION_LIFETIME=60 * 60 * 24 * 30,  # 30 giorni
         MAX_CONTENT_LENGTH=64 * 1024,
+        GOOGLE_CLIENT_ID=env("GOOGLE_CLIENT_ID") or "",
+        GOOGLE_CLIENT_SECRET=env("GOOGLE_CLIENT_SECRET") or "",
+        TELEGRAM_BOT_USERNAME=(env("TELEGRAM_BOT_USERNAME") or "").lstrip("@"),
     )
     if test_config:
         app.config.update(test_config)
@@ -48,6 +54,9 @@ def create_app(test_config=None):
     security.init_app(app)
     seo.init_app(app)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(prefs_bp)
+    google_auth.init_app(app)
+    app.register_blueprint(google_auth.bp)
 
     @app.get("/")
     def index():
@@ -75,6 +84,8 @@ def create_app(test_config=None):
 
     @app.context_processor
     def inject_globals():
-        return {"app_name": APP_NAME, "current_user": security.current_user(), "canonical": seo.canonical_url(request)}
+        return {"app_name": APP_NAME, "current_user": security.current_user(), "canonical": seo.canonical_url(request),
+                "google_enabled": app.config.get("GOOGLE_ENABLED", False),
+                "bot_username": app.config.get("TELEGRAM_BOT_USERNAME", "")}
 
     return app

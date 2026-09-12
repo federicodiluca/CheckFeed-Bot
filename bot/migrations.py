@@ -84,10 +84,18 @@ def _v3_consent(conn):
             conn.execute(f"ALTER TABLE users ADD COLUMN {col}")
 
 
+def _v4_google(conn):
+    """users.google_sub: identificativo stabile dell'account Google (login OAuth)."""
+    if not column_exists(conn, "users", "google_sub"):
+        conn.execute("ALTER TABLE users ADD COLUMN google_sub TEXT")
+        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users (google_sub)")
+
+
 MIGRATIONS = [
     (1, _v1_multi_channel),
     (2, _v2_digest_guard),
     (3, _v3_consent),
+    (4, _v4_google),
 ]
 
 

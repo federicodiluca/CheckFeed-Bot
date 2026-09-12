@@ -75,7 +75,7 @@ def register():
 
     security.login_user(user)
     flash("Benvenuto! Il tuo account è pronto: imposta fonti e parole chiave nelle preferenze.", "success")
-    return redirect(url_for("auth.account"))
+    return redirect(url_for("prefs.show"))
 
 
 # --- login / logout ---------------------------------------------------------

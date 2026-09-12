@@ -7,7 +7,7 @@ from bot.db import get_conn
 
 ALERT_MODES = ("instant", "digest")   # instant = alert a ogni fetch; digest = solo nel report
 USER_COLUMNS = ("id, telegram_id, username, email, email_verified, keywords, active, "
-                "notify_telegram, notify_email, alert_mode, digest_time, last_digest_date, consent_version, consent_at, created_at")
+                "notify_telegram, notify_email, alert_mode, digest_time, last_digest_date, consent_version, consent_at, google_sub, created_at")
 
 
 def _split_keywords(raw):
@@ -32,6 +32,7 @@ def _row_to_user(row):
         "last_digest_date": row["last_digest_date"],
         "consent_version": row["consent_version"],
         "consent_at": row["consent_at"],
+        "google_sub": row["google_sub"],
         "created_at": row["created_at"],
     }
 
@@ -64,6 +65,14 @@ def get_user_by_id(user_id):
 
 def get_user_by_email(email):
     return _fetch_user("email=?", ((email or "").strip().lower(),))
+
+
+def get_user_by_google_sub(sub):
+    return _fetch_user("google_sub=?", (sub,)) if sub else None
+
+
+def set_google_sub(user_id, sub):
+    _exec("UPDATE users SET google_sub=? WHERE id=?", (sub, user_id))
 
 
 def get_users(active_only=True):
@@ -140,6 +149,67 @@ def link_telegram(user_id, telegram_id, username=None):
     _exec("UPDATE users SET telegram_id=?, username=COALESCE(?, username), notify_telegram=1 WHERE id=?",
           (telegram_id, username, user_id))
     return True
+
+
+def unlink_telegram(user_id):
+    _exec("UPDATE users SET telegram_id=NULL, username=NULL, notify_telegram=0 WHERE id=?", (user_id,))
+
+
+def merge_telegram_user(user_id, telegram_id):
+    """Collega a `user_id` una chat Telegram che oggi appartiene a un utente "solo Telegram"
+    (senza email): le sue preferenze (keyword, fonti, log invii) confluiscono nell'account web
+    e il vecchio utente viene eliminato. Ritorna False se l'altro utente ha un'email (è un
+    account distinto: non si fonde in automatico)."""
+    other = get_user(telegram_id)
+    if not other:
+        return link_telegram(user_id, telegram_id)
+    if other["id"] == user_id:
+        return True
+    if other.get("email"):
+        return False
+    target = get_user_by_id(user_id)
+    keywords = list(target["keywords"])
+    keywords += [k for k in other["keywords"] if k.lower() not in {x.lower() for x in keywords}]
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("INSERT OR IGNORE INTO user_sources (user_id, source_id, follow) "
+                "SELECT ?, source_id, follow FROM user_sources WHERE user_id=?", (user_id, other["id"]))
+    cur.execute("DELETE FROM user_sources WHERE user_id=?", (other["id"],))
+    cur.execute("UPDATE OR IGNORE deliveries SET user_id=? WHERE user_id=?", (user_id, other["id"]))
+    cur.execute("DELETE FROM deliveries WHERE user_id=?", (other["id"],))
+    cur.execute("UPDATE sources SET added_by=? WHERE added_by=?", (user_id, other["id"]))
+    cur.execute("DELETE FROM users WHERE id=?", (other["id"],))
+    cur.execute("UPDATE users SET telegram_id=?, username=?, notify_telegram=1, keywords=? WHERE id=?",
+                (telegram_id, other["username"], ",".join(keywords), user_id))
+    conn.commit()
+    conn.close()
+    return True
+
+
+# --- codici di collegamento Telegram ---------------------------------------
+
+LINK_CODE_TTL_MINUTES = 15
+
+
+def create_link_code(user_id, code):
+    """Registra un codice usa-e-getta (uno solo attivo per utente)."""
+    conn = get_conn()
+    conn.execute("DELETE FROM link_codes WHERE user_id=? OR datetime(expires_at) < datetime('now')", (user_id,))
+    conn.execute("INSERT INTO link_codes (code, user_id, expires_at) VALUES (?, ?, datetime('now', ?))",
+                 (code, user_id, f"+{LINK_CODE_TTL_MINUTES} minutes"))
+    conn.commit()
+    conn.close()
+
+
+def consume_link_code(code):
+    """Ritorna lo user_id del codice (e lo cancella), oppure None se inesistente o scaduto."""
+    conn = get_conn()
+    row = conn.execute("SELECT user_id FROM link_codes WHERE code=? AND datetime(expires_at) >= datetime('now')",
+                       ((code or "").strip().upper(),)).fetchone()
+    conn.execute("DELETE FROM link_codes WHERE code=? OR datetime(expires_at) < datetime('now')", ((code or "").strip().upper(),))
+    conn.commit()
+    conn.close()
+    return row["user_id"] if row else None
 
 
 # --- stato / preferenze ---------------------------------------------------

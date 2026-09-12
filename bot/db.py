@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS users (
     last_digest_date TEXT,
     consent_version TEXT,
     consent_at DATETIME,
+    google_sub TEXT UNIQUE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -102,6 +103,13 @@ CREATE TABLE IF NOT EXISTS job_runs (
     finished_at DATETIME,
     ok INTEGER,
     error TEXT
+);
+
+-- Codici usa-e-getta per collegare un account web a una chat Telegram (/link CODICE).
+CREATE TABLE IF NOT EXISTS link_codes (
+    code TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    expires_at DATETIME NOT NULL
 );
 
 -- Incidenti aperti dal watchdog: un avviso all'apertura, uno alla chiusura.

@@ -18,4 +18,8 @@
   <button type="submit" class="button primary">Registrati</button>
   <p class="muted">Hai già un account? <a href="{{ url_for('auth.login') }}">Accedi</a></p>
 </form>
+{% if google_enabled %}
+<p class="or">oppure</p>
+<p><a class="button" href="{{ url_for('google.start') }}">Registrati con Google</a></p>
+{% endif %}
 {% endblock %}
