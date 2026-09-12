@@ -1,6 +1,6 @@
 from threading import Thread
 from bot.telegram import TELEGRAM_TOKEN, answer_callback_query, edit_message_text, send_long_message, send_message
-from bot.db_user import activate_user, add_user, deactivate_user, get_user, update_keywords
+from bot.db_user import activate_user, add_user, deactivate_user, get_user, update_keywords, user_id_for_telegram
 from bot.db_news import get_recent_news
 from bot.db_sources import (
     add_user_source,
@@ -42,7 +42,7 @@ def build_help_message(telegram_id=None):
     report_time = cfg.get("daily_report_time", "18:00")
     retention = cfg.get("data_retention_days", 7)
     if telegram_id is not None:
-        sources = get_user_sources(telegram_id)
+        sources = get_user_sources(user_id_for_telegram(telegram_id))
         feed_list = "\n".join(f"• {'✅' if s['followed'] else '❌'} {escape_html(s['name'])}" for s in sources)
     else:
         feed_list = "\n".join(f"• {escape_html(s['name'])}" for s in get_sources())
@@ -235,7 +235,7 @@ def cmd_latest(telegram_id, args):
     if first.isdigit():
         n = max(1, min(int(first), LATEST_MAX))
 
-    rows = get_recent_news(limit=n, source_ids=get_followed_source_ids(telegram_id))
+    rows = get_recent_news(limit=n, source_ids=get_followed_source_ids(user_id_for_telegram(telegram_id)))
     if not rows:
         send_message("⚠️ Nessuna notizia disponibile dalle fonti che segui. Controlla /sources.", chat_id=telegram_id)
         return
@@ -257,8 +257,16 @@ def cmd_latest(telegram_id, args):
 ALL_TOKENS = ("all", "tutte", "tutti", "*")
 
 
+def _ensure_user_id(telegram_id):
+    """users.id per il telegram_id, registrando l'utente se non esiste ancora."""
+    if get_user(telegram_id) is None:
+        add_user(telegram_id)
+    return user_id_for_telegram(telegram_id)
+
+
 def format_sources_list(telegram_id):
-    sources = get_user_sources(telegram_id)
+    user_id = user_id_for_telegram(telegram_id)
+    sources = get_user_sources(user_id)
     if not sources:
         return "⚠️ Nessuna fonte configurata. Aggiungine una con /addsource URL [nome]."
     followed = sum(1 for s in sources if s["followed"])
@@ -267,7 +275,7 @@ def format_sources_list(telegram_id):
         mark = "✅" if s["followed"] else "❌"
         extra = " · HTML" if s["type"] == "html" else ""
         if s["origin"] == "user":
-            extra += " · custom" + (" (tua)" if s["added_by"] == telegram_id else "")
+            extra += " · custom" + (" (tua)" if s["added_by"] == user_id else "")
         lines.append(f"{mark} <b>{s['id']}</b>. {escape_html(s['name'])}{extra}")
     lines.append("\n👇 Tocca una fonte per attivarla/disattivarla. In alternativa: /follow n, m · /unfollow n, m · /addsource URL [nome]")
     return "\n".join(lines)
@@ -278,7 +286,7 @@ CB_PREFIX = "src"  # callback_data: "src:t:<id>" toggle, "src:all:1|0" tutte/nes
 
 def build_sources_keyboard(telegram_id):
     """Tastiera inline con un pulsante per fonte (✅/❌) più "Tutte" e "Nessuna"."""
-    sources = get_user_sources(telegram_id)
+    sources = get_user_sources(user_id_for_telegram(telegram_id))
     if not sources:
         return None
     rows = []
@@ -304,26 +312,25 @@ def handle_sources_callback(telegram_id, chat_id, message_id, data):
         return None
     action, value = parts[1], parts[2]
 
-    if get_user(telegram_id) is None:
-        add_user(telegram_id)
-    before = get_followed_source_ids(telegram_id)
+    user_id = _ensure_user_id(telegram_id)
+    before = get_followed_source_ids(user_id)
 
     if action == "t" and value.isdigit():
         source = get_source(int(value))
         if not source or not source["enabled"]:
             return "Fonte non più disponibile"
-        currently = source["id"] in get_followed_source_ids(telegram_id)
-        set_user_source(telegram_id, source["id"], not currently)
+        currently = source["id"] in before
+        set_user_source(user_id, source["id"], not currently)
         feedback = f"{'❌ Non segui più' if currently else '✅ Ora segui'}: {source['name']}"
     elif action == "all" and value in ("0", "1"):
         follow = value == "1"
         for s in get_sources():
-            set_user_source(telegram_id, s["id"], follow)
+            set_user_source(user_id, s["id"], follow)
         feedback = "✅ Segui tutte le fonti" if follow else "❌ Non segui nessuna fonte"
     else:
         return None
 
-    if get_followed_source_ids(telegram_id) != before:
+    if get_followed_source_ids(user_id) != before:
         # Telegram rifiuta un edit senza modifiche ("message is not modified"): lo evitiamo
         edit_message_text(chat_id, message_id, format_sources_list(telegram_id), parse_mode="HTML",
                           reply_markup=build_sources_keyboard(telegram_id))
@@ -355,7 +362,7 @@ def _parse_source_ids(args, telegram_id):
     tokens = [t for t in args.replace(",", " ").split() if t]
     if not tokens:
         return None, []
-    valid = {s["id"] for s in get_user_sources(telegram_id)}
+    valid = {s["id"] for s in get_user_sources(user_id_for_telegram(telegram_id))}
     if len(tokens) == 1 and tokens[0].lower() in ALL_TOKENS:
         return sorted(valid), []
     ids, invalid = [], []
@@ -376,10 +383,9 @@ def _set_follow(telegram_id, args, follow, usage):
     if not ids:
         send_message(f"❌ Nessuna fonte valida tra: {', '.join(invalid)}.\n{usage}", chat_id=telegram_id)
         return
-    if get_user(telegram_id) is None:
-        add_user(telegram_id)
+    user_id = _ensure_user_id(telegram_id)
     for sid in ids:
-        set_user_source(telegram_id, sid, follow)
+        set_user_source(user_id, sid, follow)
     names = [escape_html(get_source(sid)["name"]) for sid in ids]
     verb = "Ora segui" if follow else "Non segui più"
     message = f"✅ {verb}: {', '.join(names)}"
@@ -408,12 +414,11 @@ def cmd_addsource(telegram_id, args):
         send_message(USAGE_ADDSOURCE, chat_id=telegram_id)
         return
 
-    if get_user(telegram_id) is None:
-        add_user(telegram_id)
+    user_id = _ensure_user_id(telegram_id)
 
     existing = get_source_by_url(url)
     if existing and existing["enabled"]:
-        set_user_source(telegram_id, existing["id"], True)
+        set_user_source(user_id, existing["id"], True)
         send_message(f"ℹ️ Fonte già presente: {escape_html(existing['name'])} (n. {existing['id']}). Ora la segui.",
                      parse_mode="HTML", chat_id=telegram_id)
         return
@@ -432,7 +437,7 @@ def cmd_addsource(telegram_id, args):
         return
 
     name = custom_name or detected["name"] or url
-    source, created = add_user_source(name, detected["url"], detected["type"], telegram_id)
+    source, created = add_user_source(name, detected["url"], detected["type"], user_id)
 
     # Prima lettura senza notifiche: evita una raffica di alert sulle notizie già pubblicate
     seeded = fetch_source(source, notify=False)
@@ -464,7 +469,7 @@ def cmd_removesource(telegram_id, args):
         send_message("❌ Questa fonte è definita nella configurazione del bot e non può essere rimossa da qui. "
                      "Puoi smettere di seguirla con /unfollow.", chat_id=telegram_id)
         return
-    if not remove_source(source["id"], telegram_id):
+    if not remove_source(source["id"], user_id_for_telegram(telegram_id)):
         send_message("❌ Puoi rimuovere solo le fonti che hai aggiunto tu. Per non seguirla usa /unfollow.", chat_id=telegram_id)
         return
     send_message(f"🗑️ Fonte rimossa: {escape_html(source['name'])}", parse_mode="HTML", chat_id=telegram_id)

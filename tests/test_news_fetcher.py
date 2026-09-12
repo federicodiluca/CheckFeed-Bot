@@ -31,7 +31,7 @@ def test_fetch_news_notifies_only_matching_active_followers(fake_sources, sent_m
     add_user(20); update_keywords(20, ["graduatoria finale"])
     add_user(30); update_keywords(30, ["docenti"]); deactivate_user(30)
     add_user(40)  # nessuna keyword
-    add_user(50); update_keywords(50, ["docenti"]); set_user_source(50, 1, False)  # non segue Feed Uno
+    add_user(50); update_keywords(50, ["docenti"]); set_user_source(5, 1, False)  # (id 5) non segue Feed Uno
 
     fake_sources[UNO] = rss([
         {"title": "Concorso docenti & ATA", "link": "https://x/1", "description": "<p>Testo <b>breve</b></p>"},
@@ -57,7 +57,7 @@ def test_fetch_news_notifies_only_matching_active_followers(fake_sources, sent_m
 def test_custom_html_source_notifies_only_its_followers(fake_sources, sent_messages):
     add_user(1); update_keywords(1, ["concorso"])
     add_user(2); update_keywords(2, ["concorso"])
-    source, _ = add_user_source("USR Marche", "https://mim.example/novita", "html", telegram_id=1)
+    source, _ = add_user_source("USR Marche", "https://mim.example/novita", "html", user_id=1)
     fake_sources["https://mim.example/novita"] = html_list_page(
         [{"title": "Concorso ordinario scuola primaria", "link": "/-/concorso", "date": "11 settembre 2026", "abstract": "abstract"}],
         base="https://mim.example",

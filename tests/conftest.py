@@ -66,13 +66,18 @@ def no_network(monkeypatch):
 @pytest.fixture(autouse=True)
 def fresh_db():
     """Database SQLite vuoto per ogni test."""
-    if os.path.exists(db.DB_PATH):
-        os.remove(db.DB_PATH)
+    _remove_db_files()
     db.init_db()
     sync_config_sources(TEST_CONFIG["sites"])
     yield
-    if os.path.exists(db.DB_PATH):
-        os.remove(db.DB_PATH)
+    _remove_db_files()
+
+
+def _remove_db_files():
+    for suffix in ("", "-wal", "-shm"):
+        path = db.DB_PATH + suffix
+        if os.path.exists(path):
+            os.remove(path)
 
 
 @pytest.fixture

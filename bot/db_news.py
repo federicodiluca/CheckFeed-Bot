@@ -17,7 +17,7 @@ def _source_filter(source_ids):
 
 
 def add_news(title, link, source, published_at, content="", source_id=None):
-    """Inserisce una news. Ritorna True se è nuova, False se già presente o in errore."""
+    """Inserisce una news. Ritorna l'id se è nuova, None se già presente o in errore."""
     content = content or ""
     if len(content) > MAX_CONTENT_LEN:
         content = content[:MAX_CONTENT_LEN]
@@ -31,10 +31,10 @@ def add_news(title, link, source, published_at, content="", source_id=None):
         VALUES (?, ?, ?, ?, ?, ?)
         """, (title, link, source, published_at, content, source_id))
         conn.commit()
-        return cur.rowcount > 0  # True se nuova, False se ignorata
+        return cur.lastrowid if cur.rowcount > 0 else None  # None se ignorata (già presente)
     except Exception as e:
         log(f"❌ Errore inserimento news: {e}")
-        return False
+        return None
     finally:
         conn.close()
 
@@ -45,7 +45,7 @@ def get_recent_news(limit=10, source_ids=None):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(f"""
-        SELECT title, link, source, source_id, published_at, content
+        SELECT id, title, link, source, source_id, published_at, content
         FROM news
         WHERE 1=1{where}
         ORDER BY datetime(published_at) DESC, id DESC
@@ -65,7 +65,7 @@ def get_today_news(now=None, source_ids=None):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(f"""
-        SELECT title, link, source, source_id, published_at, content
+        SELECT id, title, link, source, source_id, published_at, content
         FROM news
         WHERE datetime(published_at) >= datetime(?) AND datetime(published_at) < datetime(?){where}
         ORDER BY datetime(published_at) DESC, id DESC

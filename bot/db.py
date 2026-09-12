@@ -1,19 +1,86 @@
 import os
 import sqlite3
 
+from bot.migrations import run_migrations
+
 # Percorso del database: sovrascrivibile con CHECKFEED_DB_PATH.
 DB_PATH = os.environ.get("CHECKFEED_DB_PATH", "data/checkfeed.db")
 
 
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=30)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-def _column_exists(cur, table, column):
-    cur.execute(f"PRAGMA table_info({table})")
-    return any(row["name"] == column for row in cur.fetchall())
+# Schema "finale": i DB creati da zero nascono così; quelli vecchi vengono
+# portati a questa forma da bot/migrations.py.
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    telegram_id INTEGER UNIQUE,
+    username TEXT,
+    email TEXT UNIQUE,
+    password_hash TEXT,
+    email_verified INTEGER NOT NULL DEFAULT 0,
+    keywords TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    notify_telegram INTEGER NOT NULL DEFAULT 1,
+    notify_email INTEGER NOT NULL DEFAULT 0,
+    alert_mode TEXT NOT NULL DEFAULT 'instant',
+    digest_time TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS news (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    link TEXT UNIQUE NOT NULL,
+    source TEXT,
+    published_at DATETIME,
+    content TEXT,
+    fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    source_id INTEGER
+);
+
+-- Fonti: da config.json (origin='config') o aggiunte dagli utenti (origin='user').
+-- type: 'rss' (feed) oppure 'html' (pagina scrapata).
+-- default_follow: 1 = seguita da tutti salvo esclusione, 0 = opt-in.
+-- added_by: users.id di chi l'ha aggiunta (solo origin='user').
+CREATE TABLE IF NOT EXISTS sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT UNIQUE NOT NULL,
+    type TEXT NOT NULL DEFAULT 'rss',
+    origin TEXT NOT NULL DEFAULT 'config',
+    added_by INTEGER,
+    enabled INTEGER NOT NULL DEFAULT 1,
+    default_follow INTEGER NOT NULL DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Override per utente: follow=1 segue, follow=0 esclude. Assente = default della fonte.
+CREATE TABLE IF NOT EXISTS user_sources (
+    user_id INTEGER NOT NULL,
+    source_id INTEGER NOT NULL,
+    follow INTEGER NOT NULL DEFAULT 1,
+    PRIMARY KEY (user_id, source_id)
+);
+
+-- Log invii: una riga per (utente, notizia, canale, tipo). Serve al dedup
+-- multi-canale: alert immediati e digest non ripropongono la stessa notizia.
+-- kind: 'alert' | 'digest'. channel: 'telegram' | 'email' | ...
+CREATE TABLE IF NOT EXISTS deliveries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    news_id INTEGER NOT NULL,
+    channel TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    sent_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, news_id, channel, kind)
+);
+CREATE INDEX IF NOT EXISTS idx_deliveries_news ON deliveries (news_id);
+"""
 
 
 def init_db():
@@ -22,61 +89,8 @@ def init_db():
         os.makedirs(parent, exist_ok=True)
 
     conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        telegram_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        keywords TEXT,
-        active INTEGER DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS news (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        link TEXT UNIQUE NOT NULL,
-        source TEXT,
-        published_at DATETIME,
-        content TEXT,
-        fetched_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    # Fonti: da config.json (origin='config') o aggiunte dagli utenti (origin='user').
-    # type: 'rss' (feed) oppure 'html' (pagina scrapata).
-    # default_follow: 1 = seguita da tutti salvo esclusione, 0 = opt-in.
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS sources (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        url TEXT UNIQUE NOT NULL,
-        type TEXT NOT NULL DEFAULT 'rss',
-        origin TEXT NOT NULL DEFAULT 'config',
-        added_by INTEGER,
-        enabled INTEGER NOT NULL DEFAULT 1,
-        default_follow INTEGER NOT NULL DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    # Override per utente: follow=1 segue, follow=0 esclude. Assente = default della fonte.
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS user_sources (
-        telegram_id INTEGER NOT NULL,
-        source_id INTEGER NOT NULL,
-        follow INTEGER NOT NULL DEFAULT 1,
-        PRIMARY KEY (telegram_id, source_id)
-    )
-    """)
-
-    # Migrazione: news.source_id (i DB creati prima non ce l'hanno)
-    if not _column_exists(cur, "news", "source_id"):
-        cur.execute("ALTER TABLE news ADD COLUMN source_id INTEGER")
-
+    conn.execute("PRAGMA journal_mode=WAL")  # letture/scritture concorrenti (bot + web)
+    conn.executescript(SCHEMA)
+    run_migrations(conn)
     conn.commit()
     conn.close()

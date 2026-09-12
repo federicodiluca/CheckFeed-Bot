@@ -88,7 +88,7 @@ def get_source_by_url(url):
     return _row_to_source(row) if row else None
 
 
-def add_user_source(name, url, source_type, telegram_id):
+def add_user_source(name, url, source_type, user_id):
     """Aggiunge una fonte custom (opt-in per gli altri, seguita da chi la aggiunge).
     Se l'URL esiste già (anche disabilitata) la riabilita e la fa seguire all'utente.
     Ritorna (source, created)."""
@@ -104,26 +104,26 @@ def add_user_source(name, url, source_type, telegram_id):
     else:
         cur.execute(
             "INSERT INTO sources (name, url, type, origin, added_by, enabled, default_follow) VALUES (?, ?, ?, 'user', ?, 1, 0)",
-            (name.strip(), url, source_type, telegram_id),
+            (name.strip(), url, source_type, user_id),
         )
         source_id = cur.lastrowid
         created = True
     cur.execute(
-        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, 1)",
-        (telegram_id, source_id),
+        "INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, 1)",
+        (user_id, source_id),
     )
     conn.commit()
     conn.close()
     return get_source(source_id), created
 
 
-def remove_source(source_id, telegram_id=None):
-    """Disabilita una fonte custom. Se telegram_id è dato, deve essere chi l'ha aggiunta.
+def remove_source(source_id, user_id=None):
+    """Disabilita una fonte custom. Se user_id è dato, deve essere chi l'ha aggiunta.
     Ritorna True se rimossa, False altrimenti (fonte di config, inesistente o non propria)."""
     source = get_source(source_id)
     if not source or source["origin"] != "user":
         return False
-    if telegram_id is not None and source["added_by"] != telegram_id:
+    if user_id is not None and source["added_by"] != user_id:
         return False
     conn = get_conn()
     cur = conn.cursor()
@@ -134,25 +134,25 @@ def remove_source(source_id, telegram_id=None):
     return True
 
 
-def set_user_source(telegram_id, source_id, follow):
+def set_user_source(user_id, source_id, follow):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, ?)",
-        (telegram_id, source_id, 1 if follow else 0),
+        "INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, ?)",
+        (user_id, source_id, 1 if follow else 0),
     )
     conn.commit()
     conn.close()
 
 
 def _overrides():
-    """{telegram_id: {source_id: follow}}"""
+    """{user_id: {source_id: follow}}"""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT telegram_id, source_id, follow FROM user_sources")
+    cur.execute("SELECT user_id, source_id, follow FROM user_sources")
     out = {}
     for r in cur.fetchall():
-        out.setdefault(r["telegram_id"], {})[r["source_id"]] = bool(r["follow"])
+        out.setdefault(r["user_id"], {})[r["source_id"]] = bool(r["follow"])
     conn.close()
     return out
 
@@ -163,9 +163,10 @@ def _effective(source, override):
     return source["default_follow"]
 
 
-def get_user_sources(telegram_id, enabled_only=True):
-    """Lista delle fonti con il flag 'followed' calcolato per l'utente."""
-    overrides = _overrides().get(telegram_id, {})
+def get_user_sources(user_id, enabled_only=True):
+    """Lista delle fonti con il flag 'followed' calcolato per l'utente
+    (user_id=None → solo i default delle fonti)."""
+    overrides = _overrides().get(user_id, {})
     result = []
     for s in get_sources(enabled_only=enabled_only):
         s = dict(s)
@@ -174,18 +175,18 @@ def get_user_sources(telegram_id, enabled_only=True):
     return result
 
 
-def get_followed_source_ids(telegram_id):
-    return {s["id"] for s in get_user_sources(telegram_id) if s["followed"]}
+def get_followed_source_ids(user_id):
+    return {s["id"] for s in get_user_sources(user_id) if s["followed"]}
 
 
 def get_followers_map(users):
-    """Per una lista di utenti ({telegram_id,...}) ritorna {source_id: [user, ...]}
+    """Per una lista di utenti ({id,...}) ritorna {source_id: [user, ...]}
     con soli utenti che seguono la fonte. Una sola query per gli override."""
     overrides = _overrides()
     sources = get_sources()
     out = {s["id"]: [] for s in sources}
     for user in users:
-        user_over = overrides.get(user["telegram_id"], {})
+        user_over = overrides.get(user["id"], {})
         for s in sources:
             if _effective(s, user_over.get(s["id"])):
                 out[s["id"]].append(user)

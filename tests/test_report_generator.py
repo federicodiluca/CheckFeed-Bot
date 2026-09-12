@@ -86,7 +86,7 @@ def test_report_is_filtered_per_user_sources(sent_messages):
 def test_manual_report_filtered_for_target(sent_messages):
     insert_today("Da Uno", "https://x/1", source_id=1)
     add_user(7)
-    set_user_source(7, 1, False)
+    set_user_source(1, 1, False)   # user id 1 = telegram 7
     report_generator.generate_report(target_chat_id=7)
     assert [m["chat_id"] for m in sent_messages] == [7]
     assert "Nessuna notizia" in sent_messages[0]["text"]

@@ -9,7 +9,7 @@ from bot.logger import log
 def send_user_report(user):
     """Invia a un utente il report delle news di oggi dalle fonti che segue.
     Ritorna il numero di notizie incluse."""
-    news = get_today_news(source_ids=get_followed_source_ids(user["telegram_id"]))
+    news = get_today_news(source_ids=get_followed_source_ids(user.get("id")))
     notifier.send_digest(user, news)
     return len(news)
 
@@ -18,7 +18,7 @@ def generate_report(target_chat_id=None):
     """Report giornaliero: a un singolo utente (target_chat_id) o a tutti gli attivi.
     Ogni utente riceve solo le notizie delle fonti che segue."""
     if target_chat_id:
-        user = get_user(target_chat_id) or {"telegram_id": target_chat_id, "keywords": []}
+        user = get_user(target_chat_id) or {"id": None, "telegram_id": target_chat_id, "keywords": []}
         count = send_user_report(user)
         log(f"📄 Report inviato manualmente a {target_chat_id} ({count} notizie).")
         return
