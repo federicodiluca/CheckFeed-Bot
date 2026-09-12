@@ -7,7 +7,7 @@ from bot.db import get_conn
 
 ALERT_MODES = ("instant", "digest")   # instant = alert a ogni fetch; digest = solo nel report
 USER_COLUMNS = ("id, telegram_id, username, email, email_verified, keywords, active, "
-                "notify_telegram, notify_email, alert_mode, digest_time, last_digest_date, created_at")
+                "notify_telegram, notify_email, alert_mode, digest_time, last_digest_date, consent_version, consent_at, created_at")
 
 
 def _split_keywords(raw):
@@ -30,6 +30,8 @@ def _row_to_user(row):
         "alert_mode": row["alert_mode"] or "instant",
         "digest_time": row["digest_time"],
         "last_digest_date": row["last_digest_date"],
+        "consent_version": row["consent_version"],
+        "consent_at": row["consent_at"],
         "created_at": row["created_at"],
     }
 
@@ -104,9 +106,10 @@ def add_user(telegram_id, username=None):
     return True
 
 
-def create_web_user(email, password_hash, alert_mode="digest"):
+def create_web_user(email, password_hash, alert_mode="digest", consent_version=None):
     """Registra un utente dal web. Ritorna l'utente creato, o None se l'email è già usata.
-    Default: report giornaliero via email, nessun alert immediato."""
+    Default: report giornaliero via email, nessun alert immediato.
+    consent_version: versione dell'informativa privacy accettata (registrata con timestamp)."""
     email = (email or "").strip().lower()
     if not email or alert_mode not in ALERT_MODES:
         raise ValueError("email o alert_mode non validi")
@@ -116,10 +119,12 @@ def create_web_user(email, password_hash, alert_mode="digest"):
     if cur.fetchone():
         conn.close()
         return None
+    now = datetime.now().isoformat()
     cur.execute("""
-        INSERT INTO users (email, password_hash, keywords, active, notify_telegram, notify_email, alert_mode, created_at)
-        VALUES (?, ?, '', 1, 0, 1, ?, ?)
-    """, (email, password_hash, alert_mode, datetime.now().isoformat()))
+        INSERT INTO users (email, password_hash, keywords, active, notify_telegram, notify_email, alert_mode,
+                           consent_version, consent_at, created_at)
+        VALUES (?, ?, '', 1, 0, 1, ?, ?, ?, ?)
+    """, (email, password_hash, alert_mode, consent_version, now if consent_version else None, now))
     user_id = cur.lastrowid
     conn.commit()
     conn.close()
@@ -199,3 +204,45 @@ def get_password_hash(user_id):
 
 def set_email_verified(user_id, verified=True):
     _exec("UPDATE users SET email_verified=? WHERE id=?", (1 if verified else 0, user_id))
+
+
+# --- GDPR: consenso, export, cancellazione ---------------------------------
+
+def set_consent(user_id, version):
+    _exec("UPDATE users SET consent_version=?, consent_at=? WHERE id=?", (version, datetime.now().isoformat(), user_id))
+
+
+def revoke_consent(user_id):
+    """Revoca del consenso: niente più invii (active=0) e consenso azzerato. I dati restano
+    finché l'utente non cancella l'account (o riacconsente)."""
+    _exec("UPDATE users SET consent_version=NULL, consent_at=NULL, active=0 WHERE id=?", (user_id,))
+
+
+def delete_user(user_id):
+    """Cancellazione definitiva (diritto all'oblio): utente, preferenze fonti e log invii.
+    Le fonti aggiunte dall'utente restano (sono dati pubblici) ma senza riferimento a lui."""
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM deliveries WHERE user_id=?", (user_id,))
+    cur.execute("DELETE FROM user_sources WHERE user_id=?", (user_id,))
+    cur.execute("UPDATE sources SET added_by=NULL WHERE added_by=?", (user_id,))
+    cur.execute("DELETE FROM users WHERE id=?", (user_id,))
+    deleted = cur.rowcount
+    conn.commit()
+    conn.close()
+    return deleted > 0
+
+
+def export_user_data(user_id):
+    """Tutti i dati personali dell'utente in forma leggibile (portabilità)."""
+    user = get_user_by_id(user_id)
+    if not user:
+        return None
+    conn = get_conn()
+    follows = [dict(r) for r in conn.execute(
+        "SELECT s.id AS source_id, s.name, s.url, us.follow FROM user_sources us JOIN sources s ON s.id=us.source_id WHERE us.user_id=?",
+        (user_id,))]
+    deliveries = [dict(r) for r in conn.execute(
+        "SELECT news_id, channel, kind, sent_at FROM deliveries WHERE user_id=? ORDER BY sent_at", (user_id,))]
+    conn.close()
+    return {"user": user, "source_preferences": follows, "deliveries": deliveries}

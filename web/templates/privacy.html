@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Informativa sulla privacy — {{ app_name }}{% endblock %}
+{% block description %}Quali dati raccoglie {{ app_name }}, perché, per quanto tempo e quali sono i tuoi diritti (GDPR).{% endblock %}
+{% block content %}
+<article class="prose">
+<h1>Informativa sulla privacy</h1>
+<p class="muted">Versione {{ config.PRIVACY_VERSION }} — ai sensi degli artt. 13 e 14 del Regolamento (UE) 2016/679 (GDPR).</p>
+<p class="notice"><strong>Bozza</strong>: questo testo è una prima stesura e sarà rivisto prima dell'apertura al pubblico.</p>
+
+<h2>1. Titolare del trattamento</h2>
+<p>Federico Di Luca — contatto: <em>[indirizzo email del titolare, da inserire]</em>.</p>
+
+<h2>2. Quali dati trattiamo</h2>
+<ul>
+  <li><strong>Dati dell'account</strong>: indirizzo email, password (conservata solo come hash non reversibile), data di registrazione.</li>
+  <li><strong>Telegram</strong> (solo se colleghi il bot): identificativo numerico della chat e, se presente, lo username.</li>
+  <li><strong>Preferenze</strong>: fonti seguite, parole chiave, canali e frequenza delle notifiche.</li>
+  <li><strong>Log delle notifiche</strong>: quali notizie ti sono state inviate, su quale canale e quando (per non inviartele due volte).</li>
+  <li><strong>Consenso</strong>: versione dell'informativa accettata e data.</li>
+  <li><strong>Dati tecnici</strong>: indirizzo IP nei log del server e per limitare i tentativi di accesso, conservati per un periodo breve.</li>
+</ul>
+<p>Non trattiamo categorie particolari di dati. Le parole chiave che scegli restano tue: non le usiamo per profilarti.</p>
+
+<h2>3. Finalità e base giuridica</h2>
+<ul>
+  <li>Fornire il servizio che hai richiesto (account, invio delle notifiche configurate): <strong>esecuzione del contratto</strong> (art. 6.1.b) e <strong>consenso</strong> per l'invio delle comunicazioni (art. 6.1.a), revocabile in ogni momento dalla pagina Account.</li>
+  <li>Sicurezza del servizio (prevenzione abusi, limiti ai tentativi di accesso): <strong>legittimo interesse</strong> (art. 6.1.f).</li>
+</ul>
+<p>Non facciamo profilazione né decisioni automatizzate con effetti giuridici. Non vendiamo né cediamo i dati a terzi per marketing.</p>
+
+<h2>4. Cookie</h2>
+<p>Usiamo un solo cookie <strong>tecnico</strong> di sessione, necessario per l'accesso all'area riservata, e una preferenza locale per il tema chiaro/scuro salvata nel tuo browser. Nessun cookie di profilazione o di terze parti: per questo non è richiesto un banner.</p>
+
+<h2>5. Destinatari e trasferimenti</h2>
+<ul>
+  <li><strong>Invio email</strong>: il fornitore del servizio di posta (attualmente <em>Brevo</em>, Francia, UE) riceve il tuo indirizzo e il contenuto delle notifiche per recapitarle.</li>
+  <li><strong>Telegram</strong>: se scegli questo canale, i messaggi transitano sulla piattaforma Telegram secondo la sua informativa.</li>
+  <li><strong>Hosting</strong>: i dati sono conservati su server <em>[fornitore e paese, da inserire]</em>.</li>
+</ul>
+<p>Non trasferiamo dati fuori dall'Unione Europea, salvo quanto necessario per Telegram se lo attivi.</p>
+
+<h2>6. Conservazione</h2>
+<ul>
+  <li>Dati dell'account e preferenze: finché l'account esiste. Puoi cancellarlo in autonomia dalla pagina Account: la cancellazione è immediata e definitiva.</li>
+  <li>Log delle notifiche: al massimo 30 giorni.</li>
+  <li>Log tecnici del server: al massimo 30 giorni.</li>
+</ul>
+
+<h2>7. I tuoi diritti</h2>
+<p>Hai diritto di accesso, rettifica, cancellazione, limitazione, portabilità e opposizione (artt. 15–22 GDPR), e di revocare il consenso senza pregiudicare la liceità del trattamento precedente. Dalla pagina <strong>Account</strong> puoi scaricare i tuoi dati, revocare il consenso e cancellare l'account senza doverci scrivere. Per tutto il resto contatta il titolare. Puoi inoltre proporre reclamo al <a href="https://www.garanteprivacy.it" rel="noopener">Garante per la protezione dei dati personali</a>.</p>
+
+<h2>8. Modifiche</h2>
+<p>Se l'informativa cambia in modo sostanziale, alla prima visita ti chiederemo di accettare la nuova versione prima di riprendere l'invio delle notifiche.</p>
+</article>
+{% endblock %}

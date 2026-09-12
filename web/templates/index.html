@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ app_name }} — notizie dal mondo scuola, filtrate per te{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Le notizie della scuola che ti interessano, senza cercarle ogni giorno</h1>
+  <p class="lead">
+    {{ app_name }} legge per te i siti degli <strong>Uffici Scolastici Regionali e Provinciali</strong> e del
+    <strong>Ministero</strong> e ti avvisa quando esce qualcosa che riguarda la tua classe di concorso,
+    la tua provincia o gli argomenti che segui: graduatorie, trasferimenti, circolari, novità normative.
+  </p>
+  <p>
+    <a class="button primary" href="{{ url_for('auth.register') }}">Registrati gratis</a>
+    <a class="button" href="{{ url_for('auth.login') }}">Accedi</a>
+  </p>
+</section>
+
+<section class="features">
+  <h2>Come funziona</h2>
+  <ol>
+    <li><strong>Scegli le fonti</strong>: gli USR e gli USP che ti riguardano, il MIM, o aggiungi un sito tu.</li>
+    <li><strong>Scegli le parole chiave</strong>: la tua classe di concorso (es. <em>A041</em>), "trasferimenti", "graduatorie"…</li>
+    <li><strong>Scegli come e quando</strong>: un <strong>riepilogo giornaliero</strong> via <strong>email</strong> e/o
+      <strong>Telegram</strong>, oppure <strong>avvisi immediati</strong> appena esce una notizia con le tue parole chiave.</li>
+  </ol>
+</section>
+
+<section class="features">
+  <h2>Perché usarlo</h2>
+  <ul>
+    <li><strong>Doppio canale</strong>: email per chi non usa Telegram, Telegram per chi vuole tutto sul telefono. O entrambi.</li>
+    <li><strong>Tu decidi la frequenza</strong>: niente raffiche di notifiche se non le vuoi.</li>
+    <li><strong>Nessun tracciamento</strong>: solo un cookie tecnico per l'accesso, nessun servizio di terze parti nel browser.</li>
+    <li><strong>Software libero</strong>: il codice è pubblico (licenza AGPL) e puoi verificarlo.</li>
+  </ul>
+</section>
+{% endblock %}

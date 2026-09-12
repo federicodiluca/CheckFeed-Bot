@@ -12,7 +12,8 @@ di default, alert immediato opzionale).
 - [x] 3. Canale email — backend intercambiabile: **API Resend** oppure **server SMTP** (env, mai segreti nel repo) (`574274a`)
 - [x] 4. Digest giornaliero (batch, orario per utente) + alert istantaneo dopo ogni ciclo di fetch, dedup su `deliveries`
 - [x] 5. Isolamento fallimenti per fonte + watchdog (fonte muta da troppe ore / job fermo → avviso all'admin)
-- [ ] 6. Web minimale (Flask, server-side rendering): registrazione, login, preferenze (fonti, keyword, canale, frequenza), collegamento Telegram
+- [x] 6a. Web base (Flask SSR): registrazione, login, account, consenso/revoca/export/cancellazione (GDPR), SEO base, tema chiaro/scuro
+- [ ] 6b. Preferenze (fonti, keyword, canali, frequenza, orario), collegamento Telegram, login Google, landing pubblica
 
 ## Requisiti trasversali (richiesti esplicitamente)
 
@@ -20,8 +21,8 @@ di default, alert immediato opzionale).
 - [ ] **GDPR — nessun rischio**: privacy policy e termini, consenso esplicito con timestamp e versione, **revoca dei consensi** dall'area utente, export ed eliminazione dell'account (diritto all'oblio), minimizzazione dati, registro trattamenti, provider email/hosting in UE dove possibile, niente tracker di terze parti senza consenso
 - [ ] **Login Google** (OAuth 2.0 / OpenID Connect) oltre a email+password
 - [ ] **Server SMTP** come alternativa all'API Resend per l'invio email
-- [ ] **Tema chiaro/scuro** (rispetta `prefers-color-scheme`, toggle manuale)
-- [ ] **Icona app e favicon** (set completo: favicon, apple-touch-icon, manifest)
+- [x] **Tema chiaro/scuro** (rispetta `prefers-color-scheme`, toggle manuale)
+- [ ] **Icona app e favicon** — per ora favicon SVG provvisoria; manca il set completo (PNG, apple-touch-icon, manifest) con un'icona vera
 
 ## Dopo l'MVP
 

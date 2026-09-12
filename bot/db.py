@@ -30,6 +30,8 @@ CREATE TABLE IF NOT EXISTS users (
     alert_mode TEXT NOT NULL DEFAULT 'instant',
     digest_time TEXT,
     last_digest_date TEXT,
+    consent_version TEXT,
+    consent_at DATETIME,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

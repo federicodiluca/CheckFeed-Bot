@@ -189,6 +189,23 @@ All'avvio, il bot invia automaticamente un messaggio di **recap con tutti i coma
 
 ---
 
+## 🌐 Web
+
+Il layer web (Flask, pagine renderizzate lato server) gira come **processo separato** sullo stesso database:
+
+```bash
+pip install -r requirements.txt
+# in .env: SECRET_KEY (obbligatoria), APP_BASE_URL (per canonical/sitemap/link nelle email)
+python web.py            # sviluppo: http://127.0.0.1:5000  (FLASK_DEBUG=1 per l'autoreload)
+```
+
+Pagine: home, registrazione (email + password, consenso privacy con versione e data), accesso, account
+(cambio password, **export dei dati**, **revoca del consenso**, **cancellazione definitiva**), privacy e termini.
+`robots.txt` e `sitemap.xml` sono generati; le pagine riservate sono `noindex`. Tema chiaro/scuro automatico con toggle.
+La gestione delle preferenze (fonti, parole chiave, canali, frequenza) e il collegamento a Telegram arrivano nel prossimo step.
+
+---
+
 ## 🐶 Watchdog
 
 Ogni lettura aggiorna lo stato di salute della fonte (`source_health`); i job schedulati lasciano un heartbeat (`job_runs`).

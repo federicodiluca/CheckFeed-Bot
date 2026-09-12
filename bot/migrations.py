@@ -77,9 +77,17 @@ def _v2_digest_guard(conn):
         conn.execute("ALTER TABLE users ADD COLUMN last_digest_date TEXT")
 
 
+def _v3_consent(conn):
+    """Consenso privacy (versione dell'informativa accettata e quando): registrazione web."""
+    for col in ("consent_version TEXT", "consent_at DATETIME"):
+        if not column_exists(conn, "users", col.split()[0]):
+            conn.execute(f"ALTER TABLE users ADD COLUMN {col}")
+
+
 MIGRATIONS = [
     (1, _v1_multi_channel),
     (2, _v2_digest_guard),
+    (3, _v3_consent),
 ]
 
 

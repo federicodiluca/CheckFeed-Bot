@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Termini del servizio — {{ app_name }}{% endblock %}
+{% block description %}Condizioni d'uso di {{ app_name }}: un servizio gratuito che raccoglie e segnala notizie pubbliche dal mondo scuola.{% endblock %}
+{% block content %}
+<article class="prose">
+<h1>Termini del servizio</h1>
+<p class="notice"><strong>Bozza</strong>: testo in prima stesura, sarà rivisto prima dell'apertura al pubblico.</p>
+
+<h2>1. Cos'è il servizio</h2>
+<p>{{ app_name }} raccoglie automaticamente notizie <strong>pubbliche</strong> dai siti degli Uffici Scolastici, del Ministero e da altre fonti che gli utenti scelgono, e le segnala via email o Telegram in base alle preferenze di ciascuno. Il servizio è gratuito e fornito "così com'è".</p>
+
+<h2>2. Nessuna garanzia di completezza</h2>
+<p>Le notizie provengono da siti terzi che possono cambiare struttura, essere irraggiungibili o pubblicare in ritardo. <strong>Non garantiamo</strong> che ogni notizia rilevante venga rilevata o segnalata in tempo: per scadenze e adempimenti fai sempre riferimento alle fonti ufficiali. Il servizio non sostituisce la consultazione diretta dei siti istituzionali e non è affiliato al Ministero né agli Uffici Scolastici.</p>
+
+<h2>3. Uso corretto</h2>
+<p>Ti impegni a non usare il servizio per attività illecite, a non tentare di comprometterne la sicurezza e a non aggiungere fonti che non hai il diritto di far leggere. Possiamo sospendere account che violano queste regole.</p>
+
+<h2>4. Contenuti delle fonti</h2>
+<p>Titoli, estratti e link appartengono ai rispettivi autori ed editori; vengono riprodotti nella misura minima necessaria a segnalarli, con il link alla pagina originale.</p>
+
+<h2>5. Modifiche e chiusura</h2>
+<p>Il servizio può cambiare o essere interrotto in qualsiasi momento. Puoi cancellare il tuo account quando vuoi dalla pagina Account.</p>
+
+<h2>6. Software libero</h2>
+<p>Il codice del servizio è pubblicato con licenza <a href="https://www.gnu.org/licenses/agpl-3.0.html" rel="noopener">AGPL-3.0</a>.</p>
+
+<h2>7. Legge applicabile</h2>
+<p>Si applica la legge italiana. Per i consumatori restano ferme le tutele inderogabili previste dalla normativa vigente.</p>
+</article>
+{% endblock %}
