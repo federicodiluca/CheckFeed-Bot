@@ -275,8 +275,13 @@ data/logs/2025-10-05.log
 
 ## 📜 Licenza
 
-**MIT License** – libero utilizzo e modifica.
-Creato per sviluppatori e scuole che vogliono restare aggiornati automaticamente ✨
+**GNU Affero General Public License v3.0 (AGPL-3.0)** — vedi [LICENSE](LICENSE).
+
+Puoi usare, studiare, modificare e ridistribuire il codice; se lo modifichi e lo offri come servizio in rete,
+devi rendere disponibile il codice sorgente delle tue modifiche sotto la stessa licenza.
+Per usi commerciali con termini diversi, contatta l'autore.
+
+Le versioni pubblicate prima del passaggio ad AGPL (fino al commit `a61119d`) restano disponibili sotto licenza MIT.
 
 ---
 
