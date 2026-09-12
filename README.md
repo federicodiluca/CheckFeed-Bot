@@ -189,6 +189,21 @@ All'avvio, il bot invia automaticamente un messaggio di **recap con tutti i coma
 
 ---
 
+## 🐶 Watchdog
+
+Ogni lettura aggiorna lo stato di salute della fonte (`source_health`); i job schedulati lasciano un heartbeat (`job_runs`).
+Ogni 30 minuti il watchdog avvisa l'amministratore (`ADMIN_TELEGRAM_ID` e/o `ADMIN_EMAIL` in `.env`) **una sola volta** quando:
+
+* una fonte fallisce da `WATCHDOG_SOURCE_FAILURES` letture consecutive (default 3);
+* una fonte non produce notizie nuove da `WATCHDOG_SOURCE_SILENCE_HOURS` ore (default 72: probabile cambio di struttura della pagina);
+* il fetch non gira da `WATCHDOG_JOB_STALE_MINUTES` minuti (default 3 × `polling_minutes`) o l'ultima esecuzione di un job è fallita.
+
+Quando il problema rientra arriva un secondo avviso. In `/sources` le fonti in errore sono marcate con ⚠️.
+Un watchdog interno non può accorgersi se muore l'intero processo: per quello imposta `HEALTHCHECK_PING_URL`
+(es. [healthchecks.io](https://healthchecks.io), gratuito) e il bot lo "pinga" a ogni fetch riuscito.
+
+---
+
 ## 🐳 Esecuzione con Docker
 
 1. Clona il repository

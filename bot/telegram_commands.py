@@ -1,6 +1,7 @@
 from threading import Thread
 from bot.telegram import TELEGRAM_TOKEN, answer_callback_query, edit_message_text, send_long_message, send_message
 from bot.db_user import activate_user, add_user, deactivate_user, get_user, update_keywords, user_id_for_telegram
+from bot.db_health import get_failing_source_ids
 from bot.db_news import get_recent_news
 from bot.db_sources import (
     add_user_source,
@@ -255,6 +256,7 @@ def cmd_latest(telegram_id, args):
 # === Fonti ===
 
 ALL_TOKENS = ("all", "tutte", "tutti", "*")
+SOURCE_WARN_FAILURES = 3  # letture fallite consecutive prima di mostrare il simbolo di errore in /sources
 
 
 def _ensure_user_id(telegram_id):
@@ -271,9 +273,12 @@ def format_sources_list(telegram_id):
         return "⚠️ Nessuna fonte configurata. Aggiungine una con /addsource URL [nome]."
     followed = sum(1 for s in sources if s["followed"])
     lines = [f"📡 <b>Fonti disponibili ({followed}/{len(sources)} seguite)</b>\n"]
+    failing = get_failing_source_ids(SOURCE_WARN_FAILURES)
     for s in sources:
         mark = "✅" if s["followed"] else "❌"
         extra = " · HTML" if s["type"] == "html" else ""
+        if s["id"] in failing:
+            extra += " ⚠️ in errore"
         if s["origin"] == "user":
             extra += " · custom" + (" (tua)" if s["added_by"] == user_id else "")
         lines.append(f"{mark} <b>{s['id']}</b>. {escape_html(s['name'])}{extra}")

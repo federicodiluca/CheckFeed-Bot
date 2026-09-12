@@ -11,7 +11,7 @@ di default, alert immediato opzionale).
 - [x] 2. Modello dati multi-canale/multi-frequenza + migrazioni versionate + `deliveries` (`6ef66c4`)
 - [x] 3. Canale email — backend intercambiabile: **API Resend** oppure **server SMTP** (env, mai segreti nel repo) (`574274a`)
 - [x] 4. Digest giornaliero (batch, orario per utente) + alert istantaneo dopo ogni ciclo di fetch, dedup su `deliveries`
-- [ ] 5. Isolamento fallimenti per fonte + watchdog (fonte muta da troppe ore / job fermo → avviso all'admin)
+- [x] 5. Isolamento fallimenti per fonte + watchdog (fonte muta da troppe ore / job fermo → avviso all'admin)
 - [ ] 6. Web minimale (Flask, server-side rendering): registrazione, login, preferenze (fonti, keyword, canale, frequenza), collegamento Telegram
 
 ## Requisiti trasversali (richiesti esplicitamente)

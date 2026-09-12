@@ -81,6 +81,33 @@ CREATE TABLE IF NOT EXISTS deliveries (
     UNIQUE (user_id, news_id, channel, kind)
 );
 CREATE INDEX IF NOT EXISTS idx_deliveries_news ON deliveries (news_id);
+
+-- Salute delle fonti (aggiornata a ogni lettura) e heartbeat dei job: usati dal watchdog.
+CREATE TABLE IF NOT EXISTS source_health (
+    source_id INTEGER PRIMARY KEY,
+    first_seen_at DATETIME,
+    last_success_at DATETIME,
+    last_error_at DATETIME,
+    last_error TEXT,
+    consecutive_failures INTEGER NOT NULL DEFAULT 0,
+    last_items INTEGER,
+    last_new_item_at DATETIME
+);
+
+CREATE TABLE IF NOT EXISTS job_runs (
+    name TEXT PRIMARY KEY,
+    started_at DATETIME,
+    finished_at DATETIME,
+    ok INTEGER,
+    error TEXT
+);
+
+-- Incidenti aperti dal watchdog: un avviso all'apertura, uno alla chiusura.
+CREATE TABLE IF NOT EXISTS watchdog_incidents (
+    key TEXT PRIMARY KEY,
+    message TEXT,
+    opened_at DATETIME
+);
 """
 
 

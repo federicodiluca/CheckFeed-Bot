@@ -1,5 +1,6 @@
 from bot import notifier
 from bot.db_deliveries import record_delivery
+from bot.db_health import record_source_failure, record_source_success
 from bot.db_news import add_news
 from bot.db_sources import get_followers_map, get_sources
 from bot.db_user import get_users
@@ -38,9 +39,11 @@ def fetch_source(source, followers=None, notify=True):
         items = read_source(source)
     except SourceError as e:
         log(f"⚠️ Fonte non leggibile: {source['name']} ({e})")
+        record_source_failure(source["id"], e)
         return 0
     except Exception as e:
         log(f"❌ Errore lettura fonte {source['name']}: {e}")
+        record_source_failure(source["id"], e)
         return 0
 
     new_count = 0
@@ -57,6 +60,7 @@ def fetch_source(source, followers=None, notify=True):
                 notify_users(followers, news)
             except Exception as e:
                 log(f"❌ Errore notifica per '{item['title']}': {e}")
+    record_source_success(source["id"], len(items), new_count)
     return new_count
 
 
