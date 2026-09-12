@@ -28,21 +28,24 @@ def channels_for(user):
 
 
 def _dispatch(kind, user, *args):
-    sent = 0
+    """Invia su ogni canale dell'utente. Ritorna la lista dei canali su cui l'invio è riuscito
+    (un canale che fallisce non blocca gli altri)."""
+    sent = []
     for name in channels_for(user):
         try:
             getattr(CHANNELS[name], kind)(user, *args)
-            sent += 1
+            sent.append(name)
         except Exception as e:
             log(f"❌ Errore {kind} via {name} a {user_label(user)}: {e}")
     return sent
 
 
 def send_alert(user, news, matched_keywords):
-    """Notifica immediata a un utente su tutti i suoi canali. Ritorna il numero di invii riusciti."""
+    """Notifica immediata a un utente. Ritorna i canali su cui è riuscita."""
     return _dispatch("send_alert", user, news, matched_keywords)
 
 
 def send_digest(user, news_list):
-    """Report/riepilogo a un utente su tutti i suoi canali. Ritorna il numero di invii riusciti."""
+    """Report/riepilogo a un utente. Le news possono avere 'matched_keywords' (evidenziate
+    dai canali). Ritorna i canali su cui è riuscito."""
     return _dispatch("send_digest", user, news_list)

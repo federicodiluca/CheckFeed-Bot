@@ -71,8 +71,15 @@ def _v1_multi_channel(conn):
         """)
 
 
+def _v2_digest_guard(conn):
+    """users.last_digest_date (YYYY-MM-DD locale): evita doppi invii del digest nello stesso giorno."""
+    if not column_exists(conn, "users", "last_digest_date"):
+        conn.execute("ALTER TABLE users ADD COLUMN last_digest_date TEXT")
+
+
 MIGRATIONS = [
     (1, _v1_multi_channel),
+    (2, _v2_digest_guard),
 ]
 
 

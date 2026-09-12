@@ -3,7 +3,7 @@ from bot.db import init_db
 from bot.db_news import cleanup_old_news
 from bot.db_sources import get_source, sync_config_sources
 from bot.news_fetcher import fetch_news, fetch_source
-from bot.report_generator import generate_report
+from bot.digest import run_digests
 from bot.logger import log, cleanup_logs
 from bot.telegram_commands import start_telegram_listener, build_help_message
 from bot.telegram import send_message
@@ -35,7 +35,7 @@ for sid in new_source_ids:
 
 # === Scheduler ===
 schedule.every(POLLING_MINUTES).minutes.do(fetch_news)
-schedule.every().day.at(DAILY_REPORT_TIME).do(generate_report)
+schedule.every(1).minutes.do(run_digests)  # digest all'orario di ogni utente (default DAILY_REPORT_TIME)
 schedule.every().day.at("20:00").do(lambda: cleanup_logs(CLEANUP_DAYS))
 schedule.every().day.at("20:30").do(lambda: cleanup_old_news(CLEANUP_DAYS))  # N.B. si fa riferimento alla data di fetch
 

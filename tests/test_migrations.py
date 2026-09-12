@@ -15,7 +15,9 @@ from bot.db_user import (
     set_preferences,
     user_id_for_telegram,
 )
-from bot.migrations import column_exists, get_version
+from bot.migrations import MIGRATIONS, column_exists, get_version
+
+LATEST = MIGRATIONS[-1][0]
 
 LEGACY_SCHEMA = """
 CREATE TABLE users (
@@ -83,8 +85,8 @@ def test_legacy_db_is_migrated_preserving_users_and_follows():
     db.init_db()
 
     conn = db.get_conn()
-    assert get_version(conn) == 1
-    assert column_exists(conn, "users", "email")
+    assert get_version(conn) == LATEST
+    assert column_exists(conn, "users", "email") and column_exists(conn, "users", "last_digest_date")
     assert column_exists(conn, "user_sources", "user_id") and not column_exists(conn, "user_sources", "telegram_id")
     assert column_exists(conn, "news", "source_id")
     assert conn.execute("SELECT COUNT(*) FROM user_sources").fetchone()[0] == 2  # orfano 9999 scartato
@@ -105,13 +107,13 @@ def test_init_db_is_idempotent_on_migrated_db():
     db.init_db()
     assert get_user(1001)["id"] == 1
     conn = db.get_conn()
-    assert get_version(conn) == 1
+    assert get_version(conn) == LATEST
     conn.close()
 
 
 def test_fresh_db_has_version_and_deliveries_table():
     conn = db.get_conn()
-    assert get_version(conn) == 1
+    assert get_version(conn) == LATEST
     assert conn.execute("SELECT 1 FROM sqlite_master WHERE name='deliveries'").fetchone()
     conn.close()
 

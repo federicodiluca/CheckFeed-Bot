@@ -1,4 +1,5 @@
 from bot import notifier
+from bot.db_deliveries import record_delivery
 from bot.db_news import add_news
 from bot.db_sources import get_followers_map, get_sources
 from bot.db_user import get_users
@@ -7,14 +8,25 @@ from bot.matching import match_users
 from bot.source_parser import SourceError, read_source
 
 
+def wants_instant_alerts(user):
+    """Gli utenti in modalità 'digest' ricevono le notizie solo nel report."""
+    return (user.get("alert_mode") or "instant") == "instant"
+
+
 def notify_users(users, news):
-    """Notifica gli utenti le cui keyword compaiono nel titolo o nel contenuto.
+    """Alert immediato agli utenti (in modalità instant) le cui keyword compaiono nel
+    titolo o nel contenuto; ogni invio riuscito è registrato in deliveries.
     Ritorna il numero di utenti notificati."""
     notified = 0
-    for user, matched_keywords in match_users(news, users):
+    candidates = [u for u in users if wants_instant_alerts(u)]
+    for user, matched_keywords in match_users(news, candidates):
         log(f"📨 Notifica a {notifier.user_label(user)} per keyword: {', '.join(matched_keywords)} | Titolo: {news['title']}")
-        if notifier.send_alert(user, news, matched_keywords):
+        channels = notifier.send_alert(user, news, matched_keywords)
+        if channels:
             notified += 1
+            if user.get("id") and news.get("id"):
+                for ch in channels:
+                    record_delivery(user["id"], news["id"], ch, "alert")
     return notified
 
 
@@ -33,14 +45,14 @@ def fetch_source(source, followers=None, notify=True):
 
     new_count = 0
     for item in items:
-        is_new = add_news(item["title"], item["link"], source["name"], item["published"], item["content"],
-                          source_id=source["id"])
-        if not is_new:
+        news_id = add_news(item["title"], item["link"], source["name"], item["published"], item["content"],
+                           source_id=source["id"])
+        if not news_id:
             continue  # news già presente → niente notifica
         new_count += 1
 
         if notify and followers:
-            news = {**item, "source": source["name"], "source_id": source["id"]}
+            news = {**item, "id": news_id, "source": source["name"], "source_id": source["id"]}
             try:
                 notify_users(followers, news)
             except Exception as e:

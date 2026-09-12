@@ -22,14 +22,21 @@ def build_report(news_list):
     if not news_list:
         return None
 
-    lines = [f"📢 <b>Report del {datetime.now():%d/%m/%Y}</b> — {len(news_list)} notizie trovate\n"]
+    matched = sum(1 for n in news_list if n.get("matched_keywords"))
+    head = f"📢 <b>Report del {datetime.now():%d/%m/%Y}</b> — {len(news_list)} notizie trovate"
+    if matched:
+        head += f" (🔔 {matched} con le tue parole chiave)"
+    lines = [head + "\n"]
     for n in news_list:
         title = escape_html((n.get("title") or "Titolo non disponibile").strip())
         source = escape_html(n.get("source") or "Sorgente sconosciuta")
         link = escape_html(n.get("link") or "")
         preview = cleanHTMLPreview(n.get("content") or "")
         published = format_local_datetime(n.get("published_at"))
-        lines.append(f"🗞️ <a href=\"{link}\">{source}</a> — {published}\n<b>{title}</b>\n<i>{preview}</i>\n")
+        kws = n.get("matched_keywords") or []
+        icon = "🔔" if kws else "🗞️"
+        hint = f" · <b>{escape_html(', '.join(kws))}</b>" if kws else ""
+        lines.append(f"{icon} <a href=\"{link}\">{source}</a> — {published}{hint}\n<b>{title}</b>\n<i>{preview}</i>\n")
 
     return "\n".join(lines).strip()
 

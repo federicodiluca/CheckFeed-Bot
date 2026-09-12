@@ -196,7 +196,7 @@ def test_notifier_dispatches_to_both_channels(sent_messages, monkeypatch):
     emails = []
     monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: emails.append(to) or True)
     user = {"id": 1, "telegram_id": 7, "notify_telegram": True, "email": "a@b.it", "notify_email": True}
-    assert notifier.send_alert(user, NEWS, ["docenti"]) == 2
+    assert notifier.send_alert(user, NEWS, ["docenti"]) == ["telegram", "email"]
     assert [m["chat_id"] for m in sent_messages] == [7] and emails == ["a@b.it"]
 
 
@@ -205,5 +205,5 @@ def test_email_failure_does_not_block_telegram(sent_messages, monkeypatch):
         raise mailer.EmailError("smtp down")
     monkeypatch.setattr(email_channel, "send_email", boom)
     user = {"id": 1, "telegram_id": 7, "email": "a@b.it", "notify_email": True}
-    assert notifier.send_digest(user, []) == 1
+    assert notifier.send_digest(user, []) == ["telegram"]
     assert [m["chat_id"] for m in sent_messages] == [7]

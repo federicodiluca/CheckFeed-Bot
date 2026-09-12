@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
     notify_email INTEGER NOT NULL DEFAULT 0,
     alert_mode TEXT NOT NULL DEFAULT 'instant',
     digest_time TEXT,
+    last_digest_date TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

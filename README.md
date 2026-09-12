@@ -77,7 +77,7 @@ Esempio base:
   * `url` → feed RSS/Atom, oppure pagina HTML "lista notizie" se `type` è `html`
   * `type` → `rss` (default) o `html` (scraping della pagina, per i siti senza feed come quelli MIM/Liferay)
   * `default_follow` → `true` (default) seguita da tutti salvo `/unfollow`; `false` disponibile ma da attivare con `/follow`
-* `daily_report_time` → orario (HH:MM) del report giornaliero
+* `daily_report_time` → orario (HH:MM) predefinito del report giornaliero (ogni utente potrà sceglierne uno proprio)
 * `polling_minutes` → intervallo tra i controlli dei feed
 * `data_retention_days` → giorni di conservazione di log e news
 * `disable_web_page_preview` → nasconde le anteprime dei link (opzionale)

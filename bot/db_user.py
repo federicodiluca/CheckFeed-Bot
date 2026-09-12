@@ -7,7 +7,7 @@ from bot.db import get_conn
 
 ALERT_MODES = ("instant", "digest")   # instant = alert a ogni fetch; digest = solo nel report
 USER_COLUMNS = ("id, telegram_id, username, email, email_verified, keywords, active, "
-                "notify_telegram, notify_email, alert_mode, digest_time, created_at")
+                "notify_telegram, notify_email, alert_mode, digest_time, last_digest_date, created_at")
 
 
 def _split_keywords(raw):
@@ -29,6 +29,7 @@ def _row_to_user(row):
         "notify_email": bool(row["notify_email"]),
         "alert_mode": row["alert_mode"] or "instant",
         "digest_time": row["digest_time"],
+        "last_digest_date": row["last_digest_date"],
         "created_at": row["created_at"],
     }
 
@@ -178,6 +179,11 @@ def set_preferences(user_id, notify_telegram=None, notify_email=None, alert_mode
     if not fields:
         return
     _exec(f"UPDATE users SET {', '.join(fields)} WHERE id=?", params + [user_id])
+
+
+def set_last_digest_date(user_id, day):
+    """Segna che il digest del giorno `day` ('YYYY-MM-DD') è stato inviato all'utente."""
+    _exec("UPDATE users SET last_digest_date=? WHERE id=?", (day, user_id))
 
 
 def set_password_hash(user_id, password_hash):

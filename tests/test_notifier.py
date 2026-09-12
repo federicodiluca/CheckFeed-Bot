@@ -52,7 +52,7 @@ def test_send_alert_dispatches_to_user_channels(monkeypatch):
     monkeypatch.setitem(notifier.CHANNELS, "fake", ch)
     monkeypatch.setattr(notifier, "channels_for", lambda user: ["fake"])
     user, news = {"telegram_id": 1, "keywords": ["x"]}, {"title": "t", "link": "l"}
-    assert notifier.send_alert(user, news, ["x"]) == 1
+    assert notifier.send_alert(user, news, ["x"]) == ["fake"]
     assert ch.alerts == [(user, news, ["x"])]
 
 
@@ -60,7 +60,7 @@ def test_send_digest_dispatches_to_user_channels(monkeypatch):
     ch = FakeChannel()
     monkeypatch.setitem(notifier.CHANNELS, "fake", ch)
     monkeypatch.setattr(notifier, "channels_for", lambda user: ["fake"])
-    assert notifier.send_digest({"telegram_id": 1}, []) == 1
+    assert notifier.send_digest({"telegram_id": 1}, []) == ["fake"]
     assert ch.digests == [({"telegram_id": 1}, [])]
 
 
@@ -69,7 +69,7 @@ def test_failing_channel_is_isolated(monkeypatch):
     monkeypatch.setitem(notifier.CHANNELS, "ok", ok)
     monkeypatch.setitem(notifier.CHANNELS, "ko", ko)
     monkeypatch.setattr(notifier, "channels_for", lambda user: ["ko", "ok"])
-    assert notifier.send_alert({"telegram_id": 1}, {"title": "t"}, ["k"]) == 1
+    assert notifier.send_alert({"telegram_id": 1}, {"title": "t"}, ["k"]) == ["ok"]
     assert len(ok.alerts) == 1
 
 
