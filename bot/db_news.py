@@ -75,6 +75,32 @@ def get_today_news(now=None, source_ids=None):
     return [dict(r) for r in rows]
 
 
+def search_news(source_ids=None, query=None, days=None, page=1, per_page=20):
+    """Ricerca paginata: filtro per fonti (None = tutte), testo (titolo/contenuto, case-insensitive)
+    e finestra temporale in giorni (su published_at). Ritorna (righe, totale)."""
+    where, params = _source_filter(source_ids)
+    if query:
+        like = f"%{query.strip()}%"
+        where += " AND (title LIKE ? OR content LIKE ?)"
+        params += [like, like]
+    if days:
+        where += " AND datetime(published_at) >= datetime('now', ?)"
+        params.append(f"-{int(days)} days")
+    page = max(1, int(page))
+    per_page = max(1, min(int(per_page), 100))
+    conn = get_conn()
+    total = conn.execute(f"SELECT COUNT(*) FROM news WHERE 1=1{where}", params).fetchone()[0]
+    rows = conn.execute(f"""
+        SELECT id, title, link, source, source_id, published_at, content
+        FROM news
+        WHERE 1=1{where}
+        ORDER BY datetime(published_at) DESC, id DESC
+        LIMIT ? OFFSET ?
+    """, params + [per_page, (page - 1) * per_page]).fetchall()
+    conn.close()
+    return [dict(r) for r in rows], total
+
+
 def cleanup_old_news(days=7):
     """Elimina le news con fetched_at più vecchio di `days` giorni. Ritorna il numero di righe eliminate."""
     conn = get_conn()

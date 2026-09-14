@@ -24,6 +24,14 @@
   </ol>
 </section>
 
+{% if latest %}
+<section class="features">
+  <h2>Ultime notizie raccolte</h2>
+  {% set news = latest %}{% include "_news_list.html" %}
+  <p><a class="button" href="{{ url_for('news.index') }}">Tutte le notizie, con filtri →</a></p>
+</section>
+{% endif %}
+
 <section class="features">
   <h2>Perché usarlo</h2>
   <ul>

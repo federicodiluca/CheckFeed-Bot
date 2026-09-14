@@ -31,7 +31,9 @@
     <nav aria-label="Principale">
       <a class="brand" href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28" class="brand-logo">{{ app_name }}</a>
       <ul>
+        <li><a href="{{ url_for('news.index') }}">Notizie</a></li>
         {% if current_user %}
+          <li><a href="{{ url_for('news.mine') }}">Le mie notizie</a></li>
           <li><a href="{{ url_for('prefs.show') }}">Preferenze</a></li>
           <li><a href="{{ url_for('auth.account') }}">Account</a></li>
           <li>

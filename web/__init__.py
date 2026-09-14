@@ -14,13 +14,26 @@ import secrets
 from flask import Flask, render_template, request
 
 from bot.db import init_db
+from bot.db_news import search_news
 from bot.env import env, env_bool
+from bot.utils import format_local_datetime, strip_html
 from web import google_auth, seo, security
 from web.auth import bp as auth_bp
+from web.news import bp as news_bp, source_url
 from web.preferences import bp as prefs_bp
 
 APP_NAME = "School Feed Monitor"
 PRIVACY_VERSION = "2026-09-12"   # aggiorna quando cambia l'informativa: gli utenti dovranno riaccettarla
+
+
+_GIORNI = ["lunedì", "martedì", "mercoledì", "giovedì", "venerdì", "sabato", "domenica"]
+_MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto",
+         "settembre", "ottobre", "novembre", "dicembre"]
+
+
+def giorno_it(d):
+    """date -> 'Sabato 13 settembre 2026' (senza dipendere dal locale del server)."""
+    return f"{_GIORNI[d.weekday()].capitalize()} {d.day} {_MESI[d.month - 1]} {d.year}"
 
 
 def create_app(test_config=None):
@@ -55,12 +68,18 @@ def create_app(test_config=None):
     seo.init_app(app)
     app.register_blueprint(auth_bp)
     app.register_blueprint(prefs_bp)
+    app.register_blueprint(news_bp)
+    app.jinja_env.filters["local_datetime"] = lambda v: format_local_datetime(v, "%d/%m/%Y %H:%M")
+    app.jinja_env.filters["preview"] = lambda v, n=220: (lambda t: t[:n].rsplit(" ", 1)[0] + "…" if len(t) > n else t)(strip_html(v or ""))
+    app.jinja_env.filters["giorno_it"] = giorno_it
+    app.jinja_env.globals["source_url"] = source_url
     google_auth.init_app(app)
     app.register_blueprint(google_auth.bp)
 
     @app.get("/")
     def index():
-        return render_template("index.html")
+        latest, _ = search_news(days=7, page=1, per_page=5)
+        return render_template("index.html", latest=latest)
 
     @app.get("/privacy")
     def privacy():

@@ -14,6 +14,8 @@ di default, alert immediato opzionale).
 - [x] 5. Isolamento fallimenti per fonte + watchdog (fonte muta da troppe ore / job fermo → avviso all'admin)
 - [x] 6a. Web base (Flask SSR): registrazione, login, account, consenso/revoca/export/cancellazione (GDPR), SEO base, tema chiaro/scuro
 - [x] 6b. Preferenze (fonti, keyword, canali, frequenza, orario), aggiunta fonti, collegamento Telegram (`/link`), login Google, landing pubblica
+- [x] 7a. Pagine notizie: `/notizie` pubblica con filtri e pagine per fonte (SEO), `/le-mie-notizie` con recap per giorno
+- [ ] 7b. Restyling UI (layout moderno, mobile-first, design system minimo; fix delle brutture grafiche segnalate)
 
 ## Requisiti trasversali (richiesti esplicitamente)
 

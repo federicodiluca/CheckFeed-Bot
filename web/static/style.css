@@ -89,3 +89,30 @@ input[type="url"] { width: 100%; }
 .flash.success { background: var(--success-bg); }
 .flash.error { background: var(--error-bg); }
 .flash.info { background: var(--info-bg); }
+
+/* --- notizie ------------------------------------------------------------ */
+.filters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-end; margin: 12px 0 16px; }
+.filters label { margin: 0 0 4px; font-size: .9rem; }
+.filters input[type="search"], .filters select {
+  padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--card); color: var(--fg); font-size: 1rem;
+}
+.filters input[type="search"] { min-width: 220px; }
+.filters .button { margin-top: 0; }
+.news-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+.news-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.news-card.matched { border-left: 4px solid var(--accent); }
+.news-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; font-size: .85rem; color: var(--muted); }
+.news-source { font-weight: 600; text-decoration: none; }
+.news-title { margin: 6px 0 4px; font-size: 1.05rem; line-height: 1.35; }
+.news-title a { color: var(--fg); text-decoration: none; }
+.news-title a:hover { text-decoration: underline; }
+.news-preview { margin: 0; color: var(--muted); font-size: .95rem; }
+.badge { background: var(--warning-bg); color: var(--fg); border-radius: 999px; padding: 2px 10px; font-size: .8rem; }
+.badge.muted { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.empty { color: var(--muted); padding: 24px 0; }
+.pagination { display: flex; justify-content: space-between; margin: 20px 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 16px 0; }
+.tabs a { padding: 8px 14px; text-decoration: none; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs a.active { color: var(--fg); border-bottom-color: var(--primary); font-weight: 600; }
+.day-nav { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.day-nav h2 { margin: 8px 0; font-size: 1.2rem; }

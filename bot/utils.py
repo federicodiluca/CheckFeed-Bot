@@ -128,3 +128,11 @@ def format_local_datetime(utc_str, fmt="%d/%m/%Y %H:%M"):
     except ValueError:
         return utc_str[:16]
     return dt.astimezone().strftime(fmt)
+
+
+def slugify(text, max_len=60):
+    """'USR Emilia-Romagna – Ufficio VII' -> 'usr-emilia-romagna-ufficio-vii' (per URL leggibili)."""
+    import unicodedata
+    text = unicodedata.normalize("NFKD", str(text or "")).encode("ascii", "ignore").decode("ascii")
+    text = re.sub(r"[^a-zA-Z0-9]+", "-", text).strip("-").lower()
+    return text[:max_len].rstrip("-") or "fonte"

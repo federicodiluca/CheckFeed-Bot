@@ -29,7 +29,8 @@
       · {{ 'riepilogo giornaliero' if user.alert_mode == 'digest' else 'avvisi immediati + riepilogo' }}</dd>
     <dt>Consenso privacy</dt><dd>{% if user.consent_at %}versione {{ user.consent_version }}, il {{ user.consent_at[:10] }}{% else %}nessuno{% endif %}</dd>
   </dl>
-  <p><a class="button primary" href="{{ url_for('prefs.show') }}">Gestisci fonti, parole chiave e notifiche</a></p>
+  <p><a class="button primary" href="{{ url_for('prefs.show') }}">Gestisci fonti, parole chiave e notifiche</a>
+     <a class="button" href="{{ url_for('news.mine') }}">Le mie notizie</a></p>
 </section>
 
 <section class="card">

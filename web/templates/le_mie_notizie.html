@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Le mie notizie — {{ app_name }}{% endblock %}
+{% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
+{% block content %}
+<h1>Le mie notizie</h1>
+<p class="muted">Dalle {{ n_sources }} fonti che segui{% if user.keywords %}, con evidenziate le tue parole chiave: <strong>{{ user.keywords | join(', ') }}</strong>{% else %}. <a href="{{ url_for('prefs.show') }}">Aggiungi parole chiave</a> per evidenziare ciò che ti interessa{% endif %}.</p>
+
+<nav class="tabs" aria-label="Vista">
+  <a href="{{ url_for('news.mine') }}" {% if view == 'oggi' %}class="active" aria-current="page"{% endif %}>Riepilogo del giorno</a>
+  <a href="{{ url_for('news.mine', vista='tutte') }}" {% if view == 'tutte' %}class="active" aria-current="page"{% endif %}>Tutte le notizie</a>
+</nav>
+
+{% if view == 'oggi' %}
+  <nav class="day-nav" aria-label="Giorno">
+    <a href="{{ url_for('news.mine', giorno=prev_day.isoformat()) }}">← {{ prev_day.strftime('%d/%m') }}</a>
+    <h2>{{ day | giorno_it }}</h2>
+    {% if next_day %}<a href="{{ url_for('news.mine', giorno=next_day.isoformat()) }}">{{ next_day.strftime('%d/%m') }} →</a>{% else %}<span></span>{% endif %}
+  </nav>
+  {% set matched = news | selectattr('matched_keywords') | list | length %}
+  <p class="muted">{{ news | length }} notizie{% if matched %}, <strong>{{ matched }} con le tue parole chiave</strong>{% endif %}. È lo stesso contenuto del riepilogo che ricevi via email/Telegram.</p>
+  {% include "_news_list.html" %}
+{% else %}
+  <form method="get" class="filters" role="search">
+    <input type="hidden" name="vista" value="tutte">
+    <label for="q">Cerca</label>
+    <input type="search" id="q" name="q" value="{{ q }}" placeholder="es. graduatorie, A041" maxlength="80">
+    <label for="giorni">Periodo</label>
+    <select id="giorni" name="giorni">
+      {% for d in days_choices %}<option value="{{ d }}" {% if d == days %}selected{% endif %}>{% if d == 1 %}Oggi e ieri{% else %}Ultimi {{ d }} giorni{% endif %}</option>{% endfor %}
+    </select>
+    <button type="submit" class="button">Filtra</button>
+  </form>
+  <p class="muted">{{ pages.total }} notizie{% if pages.last > 1 %} · pagina {{ pages.current }} di {{ pages.last }}{% endif %}</p>
+  {% include "_news_list.html" %}
+  {% if pages.last > 1 %}
+  <nav class="pagination" aria-label="Pagine">
+    {% set base_args = request.args.to_dict() %}
+    {% if pages.current > 1 %}{% set _ = base_args.update({'pagina': pages.current - 1}) %}<a rel="prev" href="?{{ base_args | urlencode }}">← Più recenti</a>{% endif %}
+    {% if pages.current < pages.last %}{% set _ = base_args.update({'pagina': pages.current + 1}) %}<a rel="next" href="?{{ base_args | urlencode }}">Più vecchie →</a>{% endif %}
+  </nav>
+  {% endif %}
+{% endif %}
+{% endblock %}
