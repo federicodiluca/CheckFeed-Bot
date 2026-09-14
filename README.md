@@ -207,6 +207,7 @@ Il layer web (Flask, pagine renderizzate lato server) gira come **processo separ
 pip install -r requirements.txt
 # in .env: SECRET_KEY (obbligatoria), APP_BASE_URL (per canonical/sitemap/link nelle email)
 python web.py            # sviluppo: http://127.0.0.1:5000  (FLASK_DEBUG=1 per l'autoreload)
+python scripts/fetch_now.py   # riempie il DB con le notizie di tutte le fonti, senza notifiche (il sito non scarica da solo)
 ```
 
 Pagine: home, registrazione (email + password, consenso privacy con versione e data), accesso, account
