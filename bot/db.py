@@ -60,6 +60,9 @@ CREATE TABLE IF NOT EXISTS sources (
     added_by INTEGER,
     enabled INTEGER NOT NULL DEFAULT 1,
     default_follow INTEGER NOT NULL DEFAULT 1,
+    kind TEXT,          -- 'usr' | 'usp' | 'mim' | 'other'
+    region TEXT,        -- es. 'Emilia-Romagna'
+    province TEXT,      -- es. 'Bologna' (solo USP)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 

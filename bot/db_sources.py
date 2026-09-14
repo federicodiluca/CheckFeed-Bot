@@ -11,6 +11,9 @@ def _row_to_source(row):
         "added_by": row["added_by"],
         "enabled": bool(row["enabled"]),
         "default_follow": bool(row["default_follow"]),
+        "kind": row["kind"] or "other",
+        "region": row["region"],
+        "province": row["province"],
     }
 
 
@@ -28,18 +31,21 @@ def sync_config_sources(sites):
         name = (site.get("name") or url).strip()
         source_type = site.get("type") or "rss"
         default_follow = 1 if site.get("default_follow", True) else 0
+        kind = site.get("kind") or "other"
+        region, province = site.get("region"), site.get("province")
         urls.append(url)
         cur.execute("SELECT id FROM sources WHERE url=?", (url,))
         row = cur.fetchone()
         if row:
             cur.execute(
-                "UPDATE sources SET name=?, type=?, origin='config', enabled=1, default_follow=? WHERE id=?",
-                (name, source_type, default_follow, row["id"]),
+                "UPDATE sources SET name=?, type=?, origin='config', enabled=1, default_follow=?, kind=?, region=?, province=? WHERE id=?",
+                (name, source_type, default_follow, kind, region, province, row["id"]),
             )
         else:
             cur.execute(
-                "INSERT INTO sources (name, url, type, origin, enabled, default_follow) VALUES (?, ?, ?, 'config', 1, ?)",
-                (name, url, source_type, default_follow),
+                "INSERT INTO sources (name, url, type, origin, enabled, default_follow, kind, region, province) "
+                "VALUES (?, ?, ?, 'config', 1, ?, ?, ?, ?)",
+                (name, url, source_type, default_follow, kind, region, province),
             )
             created_ids.append(cur.lastrowid)
     if urls:

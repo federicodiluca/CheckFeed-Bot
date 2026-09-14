@@ -14,6 +14,7 @@ _CONFIG_PATH = os.path.join(_SESSION_DIR, "config.json")
 
 TEST_CONFIG = {
     "telegram_token": "123456:TEST-TOKEN",
+    "catalog": False,  # i test usano solo le due fonti qui sotto
     "machine_name": "Test-Machine",
     "sites": [
         {"name": "Feed Uno", "url": "https://example.org/uno/feed/"},

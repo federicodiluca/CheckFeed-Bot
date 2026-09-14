@@ -82,7 +82,17 @@ Esempio base:
 * `data_retention_days` → giorni di conservazione di log e news
 * `disable_web_page_preview` → nasconde le anteprime dei link (opzionale)
 
-Solo `telegram_token` e `sites` sono obbligatori; gli altri campi hanno un default.
+Solo `telegram_token` è obbligatorio; gli altri campi hanno un default.
+
+**Catalogo fonti italiane** (`"catalog": "italy"`, attivo per default; `false` per disattivarlo): il bot include
+automaticamente le fonti di [bot/catalog/italy.json](bot/catalog/italy.json) — notizie del MIM e tutti gli USR
+regionali (in arrivo gli USP provinciali). USR e USP sono *opt-in* (`default_follow: false`): ogni utente sceglie
+la sua regione/provincia. Ogni voce ha `kind` (`usr`/`usp`/`mim`/`other`), `region` e `province`; gli stessi campi
+si possono usare anche nelle `sites` di `config.json`. Per verificare che tutte le fonti siano leggibili:
+
+```bash
+python scripts/check_sources.py --catalog
+```
 
 **Variabili d'ambiente (opzionali):**
 

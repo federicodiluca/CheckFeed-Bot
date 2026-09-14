@@ -7,6 +7,7 @@ CONFIG_FILE = os.environ.get("CHECKFEED_CONFIG", "config.json")
 
 REQUIRED_KEYS = ("telegram_token",)
 SITE_TYPES = ("rss", "html")  # rss = feed RSS/Atom; html = pagina "lista notizie" da scrapare
+SITE_KINDS = ("usr", "usp", "mim", "other")
 
 DEFAULTS = {
     "machine_name": "CheckFeed",
@@ -45,9 +46,20 @@ def load_config(path=None):
         if site["type"] not in SITE_TYPES:
             raise ValueError(f"❌ Configurazione non valida: type '{site['type']}' per {site['url']} (ammessi: {', '.join(SITE_TYPES)})")
         site["default_follow"] = bool(site.get("default_follow", True))
+        site["kind"] = str(site.get("kind") or "other").lower()
+        if site["kind"] not in SITE_KINDS:
+            raise ValueError(f"❌ Configurazione non valida: kind '{site['kind']}' per {site['url']} (ammessi: {', '.join(SITE_KINDS)})")
+        site["region"] = (site.get("region") or "").strip() or None
+        site["province"] = (site.get("province") or "").strip() or None
 
     for key, value in DEFAULTS.items():
         cfg.setdefault(key, value)
+
+    # Catalogo fonti italiane (USR/USP/MIM): "catalog": "italy" | false
+    catalog = cfg.get("catalog", "italy")
+    if catalog:
+        from bot.catalog import load_catalog, merge_sites
+        cfg["sites"] = merge_sites(cfg["sites"], load_catalog(str(catalog)))
     return cfg
 
 

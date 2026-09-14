@@ -125,24 +125,71 @@ def discover_feed_url(html_data, base_url):
 
 # --- HTML scraping --------------------------------------------------------
 
+_BLOCK_TAGS = ("article", "li")
+
+
+def _link_of_heading(h):
+    """Link di un titolo: <h3><a>…</a></h3> oppure <a><h3>…</h3></a> (link che avvolge il titolo)."""
+    a = h.find("a", href=True)
+    if a and a.get_text(strip=True):
+        return a
+    outer = h.find_parent("a", href=True)
+    if outer is not None and h.get_text(strip=True):
+        return outer
+    return None
+
+
 def _heading_link(node):
     for h in node.find_all(["h1", "h2", "h3", "h4"]):
-        a = h.find("a", href=True)
-        if a and a.get_text(strip=True):
+        a = _link_of_heading(h)
+        if a is not None:
             return a
     return None
+
+
+def _block_of_heading(h):
+    """Contenitore della notizia: il più vicino <article>/<li>, altrimenti il genitore del titolo
+    (o del link che lo avvolge)."""
+    container = h.find_parent(_BLOCK_TAGS)
+    if container is not None:
+        return container
+    outer = h.find_parent("a", href=True)
+    top = outer if outer is not None else h
+    return top.parent if top.parent is not None else top
 
 
 def _candidate_blocks(soup):
     articles = soup.find_all("article")
     if articles:
         return articles
-    # fallback: contenitori di un titolo h2/h3 con link
-    blocks = []
+    # fallback: contenitori di un titolo h2/h3 con link (dentro o attorno al titolo)
+    blocks, seen = [], set()
     for h in soup.find_all(["h2", "h3"]):
-        if h.find("a", href=True) and h.parent is not None:
-            blocks.append(h.parent)
+        if _link_of_heading(h) is None:
+            continue
+        block = _block_of_heading(h)
+        if id(block) not in seen:
+            seen.add(id(block))
+            blocks.append(block)
     return blocks
+
+
+MIN_TEASER_LEN = 40
+
+
+def _teaser_text(block, title):
+    """Senza <p>: il testo più lungo tra i <div>/<span> "foglia" del blocco (teaser, sommario),
+    escludendo titolo, date e frammenti brevi (tag, categorie)."""
+    best = ""
+    for node in block.find_all(["div", "span"]):
+        if node.find(["div", "span", "p", "h1", "h2", "h3", "h4"]):
+            continue  # non è una foglia
+        text = re.sub(r"\s+", " ", node.get_text(" ", strip=True))
+        if len(text) < MIN_TEASER_LEN or text == title or title in text:
+            continue
+        if len(text) > len(best):
+            best = text
+    return best[:600]
 
 
 def parse_html_articles(html_data, base_url):
@@ -158,12 +205,13 @@ def parse_html_articles(html_data, base_url):
         a = _heading_link(block)
         if a is None:
             continue
+        heading = a.find(["h1", "h2", "h3", "h4"]) or a  # titolo = testo del heading, non dell'intero link
         link = urljoin(base_url, a["href"].strip())
         if not link.startswith(("http://", "https://")) or link in seen:
             continue
         if urlparse(link).netloc != page_host:
             continue  # link esterni: menu, social, ecc.
-        title = a.get_text(" ", strip=True)
+        title = heading.get_text(" ", strip=True)
         if len(title) < 10:
             continue
         seen.add(link)
@@ -183,6 +231,8 @@ def parse_html_articles(html_data, base_url):
                 continue  # vuoto, titolo ripetuto o paragrafo fatto solo di link (tag/categorie)
             paragraphs.append(text)
         content = " ".join(paragraphs)
+        if not content:
+            content = _teaser_text(block, title)
 
         items.append({"title": title, "link": link, "published": published or "", "content": content})
     return items, page_title

@@ -91,11 +91,19 @@ def _v4_google(conn):
         conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_sub ON users (google_sub)")
 
 
+def _v5_source_geo(conn):
+    """sources.kind/region/province: catalogo USR/USP per regione e provincia."""
+    for col in ("kind TEXT", "region TEXT", "province TEXT"):
+        if not column_exists(conn, "sources", col.split()[0]):
+            conn.execute(f"ALTER TABLE sources ADD COLUMN {col}")
+
+
 MIGRATIONS = [
     (1, _v1_multi_channel),
     (2, _v2_digest_guard),
     (3, _v3_consent),
     (4, _v4_google),
+    (5, _v5_source_geo),
 ]
 
 

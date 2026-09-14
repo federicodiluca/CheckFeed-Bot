@@ -1,0 +1,24 @@
+[
+  {"name": "MIM — Notizie", "url": "https://www.mim.gov.it/web/guest/news", "type": "html", "kind": "mim", "default_follow": true},
+  {"name": "MIM — Comunicati stampa", "url": "https://www.mim.gov.it/web/guest/comunicati", "type": "html", "kind": "mim", "default_follow": false},
+
+  {"name": "USR Abruzzo", "url": "https://www.mim.gov.it/web/abruzzo/notizie", "type": "html", "kind": "usr", "region": "Abruzzo"},
+  {"name": "USR Basilicata", "url": "https://www.mim.gov.it/web/basilicata/notizie", "type": "html", "kind": "usr", "region": "Basilicata"},
+  {"name": "USR Calabria", "url": "https://www.istruzione.calabria.it/feed/", "type": "rss", "kind": "usr", "region": "Calabria"},
+  {"name": "USR Campania — Notizie", "url": "https://www.mim.gov.it/web/miur-usr-campania/notizie", "type": "html", "kind": "usr", "region": "Campania"},
+  {"name": "USR Campania — Avvisi", "url": "https://www.mim.gov.it/web/miur-usr-campania/avvisi", "type": "html", "kind": "usr", "region": "Campania"},
+  {"name": "USR Emilia-Romagna", "url": "https://www.istruzioneer.gov.it/tutte-le-notizie/feed/", "type": "rss", "kind": "usr", "region": "Emilia-Romagna"},
+  {"name": "USR Friuli-Venezia Giulia", "url": "https://usrfvg.gov.it/it/home/menu/notizie/", "type": "html", "kind": "usr", "region": "Friuli-Venezia Giulia"},
+  {"name": "USR Lazio", "url": "https://www.ufficioscolasticoregionalelazio.it/feed/", "type": "rss", "kind": "usr", "region": "Lazio"},
+  {"name": "USR Liguria", "url": "https://www.istruzioneliguria.gov.it/archivio-news", "type": "html", "kind": "usr", "region": "Liguria"},
+  {"name": "USR Lombardia", "url": "https://www.mim.gov.it/web/usr-lombardia/comunicazioni", "type": "html", "kind": "usr", "region": "Lombardia"},
+  {"name": "USR Marche", "url": "https://www.mim.gov.it/web/miur-usr-marche/novit%C3%A0-dall-usr-marche", "type": "html", "kind": "usr", "region": "Marche"},
+  {"name": "USR Molise", "url": "https://www.mim.gov.it/web/molise/notizie", "type": "html", "kind": "usr", "region": "Molise"},
+  {"name": "USR Piemonte", "url": "https://www.istruzionepiemonte.it/feed/", "type": "rss", "kind": "usr", "region": "Piemonte"},
+  {"name": "USR Puglia", "url": "https://www.pugliausr.gov.it/index.php?format=feed&type=rss", "type": "rss", "kind": "usr", "region": "Puglia"},
+  {"name": "USR Sardegna", "url": "https://www.mim.gov.it/web/usr-sardegna/notizie", "type": "html", "kind": "usr", "region": "Sardegna"},
+  {"name": "USR Sicilia", "url": "https://www.usr.sicilia.it/feed/", "type": "rss", "kind": "usr", "region": "Sicilia"},
+  {"name": "USR Toscana", "url": "https://www.mim.gov.it/web/miur-usr-toscana/notizie", "type": "html", "kind": "usr", "region": "Toscana"},
+  {"name": "USR Umbria", "url": "https://www.istruzione.umbria.it/feed/", "type": "rss", "kind": "usr", "region": "Umbria"},
+  {"name": "USR Veneto", "url": "https://istruzioneveneto.gov.it/feed/", "type": "rss", "kind": "usr", "region": "Veneto"}
+]
