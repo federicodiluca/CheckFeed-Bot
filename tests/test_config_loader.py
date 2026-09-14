@@ -14,18 +14,20 @@ def write(tmp_path, cfg):
 def test_defaults_and_site_normalization(tmp_path):
     cfg = load_config(write(tmp_path, {
         "telegram_token": "t",
+        "catalog": False,
         "sites": [
             {"url": "https://a.example/feed/"},
             {"name": "B", "url": "https://b.example/novita", "type": "HTML", "default_follow": False},
         ],
     }))
     assert cfg["polling_minutes"] == 10 and cfg["data_retention_days"] == 7
-    assert cfg["sites"][0] == {"url": "https://a.example/feed/", "name": "https://a.example/feed/", "type": "rss", "default_follow": True}
+    assert cfg["sites"][0] == {"url": "https://a.example/feed/", "name": "https://a.example/feed/", "type": "rss", "default_follow": True,
+                               "kind": "other", "region": None, "province": None}
     assert cfg["sites"][1]["type"] == "html" and cfg["sites"][1]["default_follow"] is False
 
 
 def test_sites_optional(tmp_path):
-    assert load_config(write(tmp_path, {"telegram_token": "t"}))["sites"] == []
+    assert load_config(write(tmp_path, {"telegram_token": "t", "catalog": False}))["sites"] == []
 
 
 @pytest.mark.parametrize("cfg, match", [

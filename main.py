@@ -3,7 +3,8 @@ from bot.db import init_db
 from bot.db_news import cleanup_old_news
 from bot.db_sources import get_source, sync_config_sources
 from bot.news_fetcher import fetch_news, fetch_source
-from bot.report_generator import generate_report
+from bot.digest import run_digests
+from bot.watchdog import JOB_DIGEST, JOB_FETCH, run_watchdog, tracked
 from bot.logger import log, cleanup_logs
 from bot.telegram_commands import start_telegram_listener, build_help_message
 from bot.telegram import send_message
@@ -34,8 +35,9 @@ for sid in new_source_ids:
         log(f"❌ Errore nella lettura iniziale di '{source['name']}': {e}")
 
 # === Scheduler ===
-schedule.every(POLLING_MINUTES).minutes.do(fetch_news)
-schedule.every().day.at(DAILY_REPORT_TIME).do(generate_report)
+schedule.every(POLLING_MINUTES).minutes.do(tracked(JOB_FETCH, fetch_news))
+schedule.every(1).minutes.do(tracked(JOB_DIGEST, run_digests))  # digest all'orario di ogni utente (default DAILY_REPORT_TIME)
+schedule.every(30).minutes.do(tracked("watchdog", run_watchdog))  # avvisa l'admin se fonti o job si rompono
 schedule.every().day.at("20:00").do(lambda: cleanup_logs(CLEANUP_DAYS))
 schedule.every().day.at("20:30").do(lambda: cleanup_old_news(CLEANUP_DAYS))  # N.B. si fa riferimento alla data di fetch
 
@@ -46,10 +48,8 @@ start_telegram_listener()
 send_message(f"🔄 Servizio avviato su <b>{escape_html(MACHINE_NAME)}</b>.\n\n{build_help_message()}", parse_mode="HTML")
 
 # Primo fetch subito all'avvio, senza attendere il primo intervallo
-try:
-    fetch_news()
-except Exception as e:
-    log(f"❌ Errore nel fetch iniziale: {e}\n{traceback.format_exc()}")
+# (tracked cattura e logga eventuali errori)
+tracked(JOB_FETCH, fetch_news)()
 
 while True:
     try:

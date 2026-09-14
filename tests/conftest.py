@@ -14,6 +14,7 @@ _CONFIG_PATH = os.path.join(_SESSION_DIR, "config.json")
 
 TEST_CONFIG = {
     "telegram_token": "123456:TEST-TOKEN",
+    "catalog": False,  # i test usano solo le due fonti qui sotto
     "machine_name": "Test-Machine",
     "sites": [
         {"name": "Feed Uno", "url": "https://example.org/uno/feed/"},
@@ -31,12 +32,13 @@ with open(_CONFIG_PATH, "w", encoding="utf-8") as f:
 os.environ["CHECKFEED_CONFIG"] = _CONFIG_PATH
 os.environ["CHECKFEED_DB_PATH"] = os.path.join(_SESSION_DIR, "test.db")
 os.environ["CHECKFEED_LOG_DIR"] = os.path.join(_SESSION_DIR, "logs")
+os.environ["CHECKFEED_ENV_FILE"] = os.path.join(_SESSION_DIR, "no.env")  # i test non leggono il .env reale
 
 # Solo ora è sicuro importare i moduli del bot
 import bot.db as db  # noqa: E402
 import bot.telegram as telegram  # noqa: E402
 import bot.telegram_commands as telegram_commands  # noqa: E402
-import bot.news_fetcher as news_fetcher  # noqa: E402
+import bot.channels.telegram_channel as telegram_channel  # noqa: E402
 import bot.source_parser as source_parser  # noqa: E402
 from bot.db_sources import sync_config_sources  # noqa: E402
 
@@ -66,13 +68,18 @@ def no_network(monkeypatch):
 @pytest.fixture(autouse=True)
 def fresh_db():
     """Database SQLite vuoto per ogni test."""
-    if os.path.exists(db.DB_PATH):
-        os.remove(db.DB_PATH)
+    _remove_db_files()
     db.init_db()
     sync_config_sources(TEST_CONFIG["sites"])
     yield
-    if os.path.exists(db.DB_PATH):
-        os.remove(db.DB_PATH)
+    _remove_db_files()
+
+
+def _remove_db_files():
+    for suffix in ("", "-wal", "-shm"):
+        path = db.DB_PATH + suffix
+        if os.path.exists(path):
+            os.remove(path)
 
 
 @pytest.fixture
@@ -112,6 +119,6 @@ def sent_messages(monkeypatch):
     # send_long_message di bot.telegram chiama send_message dello stesso modulo
     monkeypatch.setattr(telegram, "send_message", fake_send)
     monkeypatch.setattr(telegram_commands, "send_message", fake_send)
-    monkeypatch.setattr(news_fetcher, "send_message", fake_send)
+    monkeypatch.setattr(telegram_channel, "send_message", fake_send)
     monkeypatch.setattr(telegram, "SLEEP_BETWEEN_MSGS", 0)
     return messages

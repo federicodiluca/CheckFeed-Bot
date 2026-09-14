@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}Aggiornamenti dal mondo scuola (USR, USP, MIM) filtrati per parole chiave, via email e Telegram: report giornaliero o avvisi immediati.{% endblock %}">
+  <link rel="canonical" href="{{ canonical }}">
+  {% block robots %}{% endblock %}
+  <meta property="og:site_name" content="{{ app_name }}">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{{ self.title() }}">
+  <meta property="og:description" content="{{ self.description() }}">
+  <meta property="og:url" content="{{ canonical }}">
+  <meta property="og:locale" content="it_IT">
+  <meta name="twitter:card" content="summary">
+  <meta name="theme-color" content="#1e3a8a" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="icon" href="{{ url_for('static', filename='favicon-16x16.png') }}" type="image/png" sizes="16x16">
+  <link rel="icon" href="{{ url_for('static', filename='favicon-32x32.png') }}" type="image/png" sizes="32x32">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+  <link rel="mask-icon" href="{{ url_for('static', filename='mask-icon.svg') }}" color="#1e3a8a">
+  <link rel="manifest" href="{{ url_for('static', filename='site.webmanifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Vai al contenuto</a>
+  <header class="site-header">
+    <nav aria-label="Principale">
+      <a class="brand" href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28" class="brand-logo">{{ app_name }}</a>
+      <ul>
+        <li><a href="{{ url_for('news.index') }}">Notizie</a></li>
+        {% if current_user %}
+          <li><a href="{{ url_for('news.mine') }}">Le mie notizie</a></li>
+          <li><a href="{{ url_for('prefs.show') }}">Preferenze</a></li>
+          <li><a href="{{ url_for('auth.account') }}">Account</a></li>
+          <li>
+            <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+              <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+              <button type="submit" class="link">Esci</button>
+            </form>
+          </li>
+        {% else %}
+          <li><a href="{{ url_for('auth.login') }}">Accedi</a></li>
+          <li><a class="button" href="{{ url_for('auth.register') }}">Registrati</a></li>
+        {% endif %}
+        <li><button type="button" id="theme-toggle" class="icon" aria-label="Cambia tema chiaro/scuro" title="Tema chiaro/scuro"><span class="only-light">{% from "_icons.html" import icon %}{{ icon('moon', 18) }}</span><span class="only-dark">{{ icon('sun', 18) }}</span></button></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main id="main" class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flashes" role="status">
+          {% for category, message in messages %}<li class="flash {{ category }}">{{ message }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="inner">
+      <nav aria-label="Footer">
+        <a href="{{ url_for('news.index') }}">Notizie</a>
+        <a href="{{ url_for('privacy') }}">Privacy</a>
+        <a href="{{ url_for('terms') }}">Termini</a>
+        <a href="https://github.com/federicodiluca/school-feed-monitor" rel="noopener">Codice sorgente (AGPL-3.0)</a>
+      </nav>
+      <p>{{ app_name }} non è affiliato al Ministero dell'Istruzione e del Merito né agli Uffici Scolastici.</p>
+      <p>
+        Creato da <a href="https://federicodiluca.github.io" rel="noopener" target="_blank">Federico Di Luca</a> ·
+        guarda anche <a href="https://federicodiluca.github.io/vocabe" rel="noopener" target="_blank">Vocabe</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

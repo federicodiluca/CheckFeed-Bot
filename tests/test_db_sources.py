@@ -45,7 +45,7 @@ def test_sync_is_idempotent_updates_names_and_disables_removed():
 
 
 def test_sync_does_not_touch_user_sources():
-    add_user_source("Custom", "https://custom.org/feed/", "rss", telegram_id=1)
+    add_user_source("Custom", "https://custom.org/feed/", "rss", user_id=1)
     sync_config_sources([{"name": "Feed Uno", "url": "https://example.org/uno/feed/"}])
     assert get_source_by_url("https://custom.org/feed/")["enabled"] is True
 
@@ -62,14 +62,14 @@ def test_sync_links_legacy_news_by_source_name():
 def test_add_user_source_is_opt_in_for_others_and_followed_by_creator():
     add_user(1)
     add_user(2)
-    source, created = add_user_source("Marche", "https://mim.example/marche", "html", telegram_id=1)
+    source, created = add_user_source("Marche", "https://mim.example/marche", "html", user_id=1)
     assert created is True
     assert source["origin"] == "user" and source["added_by"] == 1 and source["default_follow"] is False
     assert get_followed_source_ids(1) == {1, 2, source["id"]}
     assert get_followed_source_ids(2) == {1, 2}
 
     # stessa url di nuovo: non crea, fa seguire
-    same, created = add_user_source("altro nome", "https://mim.example/marche", "html", telegram_id=2)
+    same, created = add_user_source("altro nome", "https://mim.example/marche", "html", user_id=2)
     assert created is False and same["id"] == source["id"] and same["name"] == "Marche"
     assert get_followed_source_ids(2) == {1, 2, source["id"]}
 
@@ -86,26 +86,26 @@ def test_follow_unfollow_overrides_and_list():
 def test_remove_source_rules():
     add_user(1)
     add_user(2)
-    source, _ = add_user_source("Custom", "https://custom.org/", "html", telegram_id=1)
+    source, _ = add_user_source("Custom", "https://custom.org/", "html", user_id=1)
     set_user_source(2, source["id"], True)
 
     assert remove_source(1) is False                      # fonte di config
-    assert remove_source(source["id"], telegram_id=2) is False  # non è chi l'ha aggiunta
+    assert remove_source(source["id"], user_id=2) is False  # non è chi l'ha aggiunta
     assert remove_source(999) is False
-    assert remove_source(source["id"], telegram_id=1) is True
+    assert remove_source(source["id"], user_id=1) is True
     assert get_source(source["id"])["enabled"] is False
     assert get_followed_source_ids(2) == {1, 2}
     # riaggiunta: stesso id, riabilitata
-    again, created = add_user_source("Custom", "https://custom.org/", "html", telegram_id=2)
+    again, created = add_user_source("Custom", "https://custom.org/", "html", user_id=2)
     assert created is False and again["id"] == source["id"] and again["enabled"] is True
 
 
 def test_followers_map():
-    add_user(10)
-    add_user(20)
-    add_user(30)
-    custom, _ = add_user_source("Custom", "https://custom.org/", "rss", telegram_id=30)
-    set_user_source(20, 1, False)
+    add_user(10)   # id 1
+    add_user(20)   # id 2
+    add_user(30)   # id 3
+    custom, _ = add_user_source("Custom", "https://custom.org/", "rss", user_id=3)
+    set_user_source(2, 1, False)
     users = get_users()
     fmap = get_followers_map(users)
     ids = lambda sid: sorted(u["telegram_id"] for u in fmap[sid])

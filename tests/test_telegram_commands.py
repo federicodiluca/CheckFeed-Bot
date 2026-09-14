@@ -305,8 +305,9 @@ def test_follow_unfollow_flow(sent_messages):
 
 def test_follow_registers_unknown_user(sent_messages):
     tc.handle_update(update("/unfollow 1", chat_id=77))
-    assert get_user(77) is not None
-    assert get_followed_source_ids(77) == {2}
+    user = get_user(77)
+    assert user is not None
+    assert get_followed_source_ids(user["id"]) == {2}
 
 
 def test_addsource_rss_via_autodiscovery_seeds_without_notifications(sent_messages, fake_sources):
@@ -458,8 +459,9 @@ def test_callback_all_none_and_invalid(sent_messages, callback_calls):
 
 def test_callback_registers_unknown_user(sent_messages, callback_calls):
     tc.handle_update(callback("src:t:1", chat_id=42))
-    assert get_user(42) is not None
-    assert get_followed_source_ids(42) == {2}
+    user = get_user(42)
+    assert user is not None
+    assert get_followed_source_ids(user["id"]) == {2}
 
 
 def test_callback_error_is_answered_not_raised(sent_messages, callback_calls, monkeypatch):

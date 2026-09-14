@@ -17,7 +17,7 @@ def _source_filter(source_ids):
 
 
 def add_news(title, link, source, published_at, content="", source_id=None):
-    """Inserisce una news. Ritorna True se è nuova, False se già presente o in errore."""
+    """Inserisce una news. Ritorna l'id se è nuova, None se già presente o in errore."""
     content = content or ""
     if len(content) > MAX_CONTENT_LEN:
         content = content[:MAX_CONTENT_LEN]
@@ -31,10 +31,10 @@ def add_news(title, link, source, published_at, content="", source_id=None):
         VALUES (?, ?, ?, ?, ?, ?)
         """, (title, link, source, published_at, content, source_id))
         conn.commit()
-        return cur.rowcount > 0  # True se nuova, False se ignorata
+        return cur.lastrowid if cur.rowcount > 0 else None  # None se ignorata (già presente)
     except Exception as e:
         log(f"❌ Errore inserimento news: {e}")
-        return False
+        return None
     finally:
         conn.close()
 
@@ -45,7 +45,7 @@ def get_recent_news(limit=10, source_ids=None):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(f"""
-        SELECT title, link, source, source_id, published_at, content
+        SELECT id, title, link, source, source_id, published_at, content
         FROM news
         WHERE 1=1{where}
         ORDER BY datetime(published_at) DESC, id DESC
@@ -65,7 +65,7 @@ def get_today_news(now=None, source_ids=None):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(f"""
-        SELECT title, link, source, source_id, published_at, content
+        SELECT id, title, link, source, source_id, published_at, content
         FROM news
         WHERE datetime(published_at) >= datetime(?) AND datetime(published_at) < datetime(?){where}
         ORDER BY datetime(published_at) DESC, id DESC
@@ -73,6 +73,32 @@ def get_today_news(now=None, source_ids=None):
     rows = cur.fetchall()
     conn.close()
     return [dict(r) for r in rows]
+
+
+def search_news(source_ids=None, query=None, days=None, page=1, per_page=20):
+    """Ricerca paginata: filtro per fonti (None = tutte), testo (titolo/contenuto, case-insensitive)
+    e finestra temporale in giorni (su published_at). Ritorna (righe, totale)."""
+    where, params = _source_filter(source_ids)
+    if query:
+        like = f"%{query.strip()}%"
+        where += " AND (title LIKE ? OR content LIKE ?)"
+        params += [like, like]
+    if days:
+        where += " AND datetime(published_at) >= datetime('now', ?)"
+        params.append(f"-{int(days)} days")
+    page = max(1, int(page))
+    per_page = max(1, min(int(per_page), 100))
+    conn = get_conn()
+    total = conn.execute(f"SELECT COUNT(*) FROM news WHERE 1=1{where}", params).fetchone()[0]
+    rows = conn.execute(f"""
+        SELECT id, title, link, source, source_id, published_at, content
+        FROM news
+        WHERE 1=1{where}
+        ORDER BY datetime(published_at) DESC, id DESC
+        LIMIT ? OFFSET ?
+    """, params + [per_page, (page - 1) * per_page]).fetchall()
+    conn.close()
+    return [dict(r) for r in rows], total
 
 
 def cleanup_old_news(days=7):

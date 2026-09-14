@@ -11,6 +11,9 @@ def _row_to_source(row):
         "added_by": row["added_by"],
         "enabled": bool(row["enabled"]),
         "default_follow": bool(row["default_follow"]),
+        "kind": row["kind"] or "other",
+        "region": row["region"],
+        "province": row["province"],
     }
 
 
@@ -28,18 +31,21 @@ def sync_config_sources(sites):
         name = (site.get("name") or url).strip()
         source_type = site.get("type") or "rss"
         default_follow = 1 if site.get("default_follow", True) else 0
+        kind = site.get("kind") or "other"
+        region, province = site.get("region"), site.get("province")
         urls.append(url)
         cur.execute("SELECT id FROM sources WHERE url=?", (url,))
         row = cur.fetchone()
         if row:
             cur.execute(
-                "UPDATE sources SET name=?, type=?, origin='config', enabled=1, default_follow=? WHERE id=?",
-                (name, source_type, default_follow, row["id"]),
+                "UPDATE sources SET name=?, type=?, origin='config', enabled=1, default_follow=?, kind=?, region=?, province=? WHERE id=?",
+                (name, source_type, default_follow, kind, region, province, row["id"]),
             )
         else:
             cur.execute(
-                "INSERT INTO sources (name, url, type, origin, enabled, default_follow) VALUES (?, ?, ?, 'config', 1, ?)",
-                (name, url, source_type, default_follow),
+                "INSERT INTO sources (name, url, type, origin, enabled, default_follow, kind, region, province) "
+                "VALUES (?, ?, ?, 'config', 1, ?, ?, ?, ?)",
+                (name, url, source_type, default_follow, kind, region, province),
             )
             created_ids.append(cur.lastrowid)
     if urls:
@@ -88,7 +94,7 @@ def get_source_by_url(url):
     return _row_to_source(row) if row else None
 
 
-def add_user_source(name, url, source_type, telegram_id):
+def add_user_source(name, url, source_type, user_id):
     """Aggiunge una fonte custom (opt-in per gli altri, seguita da chi la aggiunge).
     Se l'URL esiste già (anche disabilitata) la riabilita e la fa seguire all'utente.
     Ritorna (source, created)."""
@@ -104,26 +110,26 @@ def add_user_source(name, url, source_type, telegram_id):
     else:
         cur.execute(
             "INSERT INTO sources (name, url, type, origin, added_by, enabled, default_follow) VALUES (?, ?, ?, 'user', ?, 1, 0)",
-            (name.strip(), url, source_type, telegram_id),
+            (name.strip(), url, source_type, user_id),
         )
         source_id = cur.lastrowid
         created = True
     cur.execute(
-        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, 1)",
-        (telegram_id, source_id),
+        "INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, 1)",
+        (user_id, source_id),
     )
     conn.commit()
     conn.close()
     return get_source(source_id), created
 
 
-def remove_source(source_id, telegram_id=None):
-    """Disabilita una fonte custom. Se telegram_id è dato, deve essere chi l'ha aggiunta.
+def remove_source(source_id, user_id=None):
+    """Disabilita una fonte custom. Se user_id è dato, deve essere chi l'ha aggiunta.
     Ritorna True se rimossa, False altrimenti (fonte di config, inesistente o non propria)."""
     source = get_source(source_id)
     if not source or source["origin"] != "user":
         return False
-    if telegram_id is not None and source["added_by"] != telegram_id:
+    if user_id is not None and source["added_by"] != user_id:
         return False
     conn = get_conn()
     cur = conn.cursor()
@@ -134,25 +140,25 @@ def remove_source(source_id, telegram_id=None):
     return True
 
 
-def set_user_source(telegram_id, source_id, follow):
+def set_user_source(user_id, source_id, follow):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute(
-        "INSERT OR REPLACE INTO user_sources (telegram_id, source_id, follow) VALUES (?, ?, ?)",
-        (telegram_id, source_id, 1 if follow else 0),
+        "INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, ?)",
+        (user_id, source_id, 1 if follow else 0),
     )
     conn.commit()
     conn.close()
 
 
 def _overrides():
-    """{telegram_id: {source_id: follow}}"""
+    """{user_id: {source_id: follow}}"""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SELECT telegram_id, source_id, follow FROM user_sources")
+    cur.execute("SELECT user_id, source_id, follow FROM user_sources")
     out = {}
     for r in cur.fetchall():
-        out.setdefault(r["telegram_id"], {})[r["source_id"]] = bool(r["follow"])
+        out.setdefault(r["user_id"], {})[r["source_id"]] = bool(r["follow"])
     conn.close()
     return out
 
@@ -163,9 +169,10 @@ def _effective(source, override):
     return source["default_follow"]
 
 
-def get_user_sources(telegram_id, enabled_only=True):
-    """Lista delle fonti con il flag 'followed' calcolato per l'utente."""
-    overrides = _overrides().get(telegram_id, {})
+def get_user_sources(user_id, enabled_only=True):
+    """Lista delle fonti con il flag 'followed' calcolato per l'utente
+    (user_id=None → solo i default delle fonti)."""
+    overrides = _overrides().get(user_id, {})
     result = []
     for s in get_sources(enabled_only=enabled_only):
         s = dict(s)
@@ -174,19 +181,49 @@ def get_user_sources(telegram_id, enabled_only=True):
     return result
 
 
-def get_followed_source_ids(telegram_id):
-    return {s["id"] for s in get_user_sources(telegram_id) if s["followed"]}
+def get_followed_source_ids(user_id):
+    return {s["id"] for s in get_user_sources(user_id) if s["followed"]}
 
 
 def get_followers_map(users):
-    """Per una lista di utenti ({telegram_id,...}) ritorna {source_id: [user, ...]}
+    """Per una lista di utenti ({id,...}) ritorna {source_id: [user, ...]}
     con soli utenti che seguono la fonte. Una sola query per gli override."""
     overrides = _overrides()
     sources = get_sources()
     out = {s["id"]: [] for s in sources}
     for user in users:
-        user_over = overrides.get(user["telegram_id"], {})
+        user_over = overrides.get(user["id"], {})
         for s in sources:
             if _effective(s, user_over.get(s["id"])):
                 out[s["id"]].append(user)
     return out
+
+
+def follow_area(user_id, region, provinces=()):
+    """Imposta le fonti seguite dall'utente in base all'area (regione + province):
+    segue nazionali + USR + USP dell'area, smette di seguire USR/USP di altre aree,
+    non tocca le fonti custom ('other'). Ritorna il numero di fonti seguite."""
+    from bot.catalog import sources_for_area
+    sources = get_sources()
+    chosen = {s["id"] for s in sources_for_area(sources, region, provinces)}
+    conn = get_conn()
+    cur = conn.cursor()
+    for s in sources:
+        if s["kind"] in ("usr", "usp", "mim"):
+            cur.execute("INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, ?)",
+                        (user_id, s["id"], 1 if s["id"] in chosen else 0))
+    conn.commit()
+    conn.close()
+    return len(chosen)
+
+
+def user_area(user_id):
+    """(regione, [province]) dedotte dalle fonti USR/USP seguite, oppure (None, [])."""
+    from bot.catalog import provinces_of
+    followed = [s for s in get_user_sources(user_id) if s["followed"] and s["kind"] in ("usr", "usp")]
+    regions = sorted({s["region"] for s in followed if s.get("region")})
+    if not regions:
+        return None, []
+    region = regions[0]
+    provinces = sorted({p for s in followed if s["kind"] == "usp" and s.get("region") == region for p in provinces_of(s)})
+    return region, provinces

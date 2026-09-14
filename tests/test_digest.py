@@ -1,0 +1,163 @@
+from datetime import datetime
+
+import bot.digest as digest
+import bot.news_fetcher as news_fetcher
+import bot.report_generator as report_generator
+from bot.channels import email_channel
+from bot.db_deliveries import delivered_news_ids
+from bot.db_news import add_news
+from bot.db_sources import set_user_source
+from bot.db_user import add_user, create_web_user, get_user_by_id, set_email_verified, set_preferences, update_keywords
+from tests.fixtures import rss
+
+UNO = "https://example.org/uno/feed/"
+
+
+def insert_today(title, link, content="", source="Feed Uno", source_id=1):
+    return add_news(title, link, source, datetime.now().astimezone().isoformat(), content, source_id=source_id)
+
+
+# --- alert immediati -----------------------------------------------------------
+
+def test_instant_alerts_only_for_instant_users_and_are_logged(fake_sources, sent_messages):
+    add_user(10); update_keywords(10, ["docenti"])                                   # id 1: instant (default)
+    add_user(20); update_keywords(20, ["docenti"]); set_preferences(2, alert_mode="digest")  # id 2: digest
+    fake_sources[UNO] = rss([{"title": "Concorso docenti", "link": "https://x/1", "description": "d"}])
+
+    assert news_fetcher.fetch_news() == 1
+    assert [m["chat_id"] for m in sent_messages] == [10]
+    assert delivered_news_ids(1, kind="alert") == {1}
+    assert delivered_news_ids(2, kind="alert") == set()
+
+
+def test_alert_delivery_recorded_per_channel(fake_sources, sent_messages, monkeypatch):
+    emails = []
+    monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: emails.append(to) or True)
+    add_user(10); update_keywords(10, ["docenti"])
+    conn_user = get_user_by_id(1)
+    from bot.db import get_conn
+    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1, email_verified=1 WHERE id=1"); conn.commit(); conn.close()
+    fake_sources[UNO] = rss([{"title": "Concorso docenti", "link": "https://x/1"}])
+
+    news_fetcher.fetch_news()
+    assert emails == ["a@b.it"] and [m["chat_id"] for m in sent_messages] == [10]
+    assert delivered_news_ids(1, channel="telegram", kind="alert") == {1}
+    assert delivered_news_ids(1, channel="email", kind="alert") == {1}
+    assert conn_user["id"] == 1
+
+
+# --- costruzione digest ----------------------------------------------------------
+
+def test_annotate_marks_matches_first_and_already_alerted():
+    user = {"id": 1, "keywords": ["A041", "trasferimenti"]}
+    items = [
+        {"id": 1, "title": "Nulla", "content": ""},
+        {"id": 2, "title": "Trasferimenti 2026", "content": ""},
+        {"id": 3, "title": "Cattedre A041", "content": "<p>classe A041</p>"},
+    ]
+    out = digest.annotate(items, user, alerted_ids={3})
+    assert [n["id"] for n in out] == [2, 3, 1]
+    assert out[0]["matched_keywords"] == ["trasferimenti"] and out[0]["already_alerted"] is False
+    assert out[1]["matched_keywords"] == ["A041"] and out[1]["already_alerted"] is True
+    assert out[2]["matched_keywords"] == []
+
+
+def test_build_user_digest_filters_sources_and_highlights():
+    add_user(1); update_keywords(1, ["docenti"])
+    set_user_source(1, 2, False)
+    insert_today("Concorso docenti", "https://x/1", source_id=1)
+    insert_today("Altro", "https://x/2", source_id=1)
+    insert_today("Da Due docenti", "https://x/3", source="Feed Due", source_id=2)
+    items = digest.build_user_digest(get_user_by_id(1))
+    assert [n["link"] for n in items] == ["https://x/1", "https://x/2"]
+    assert items[0]["matched_keywords"] == ["docenti"]
+
+
+def test_telegram_and_email_digest_highlight_matches(sent_messages, monkeypatch):
+    captured = {}
+    monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: captured.update(subject=subject, html=html, text=text) or True)
+    add_user(7); update_keywords(7, ["docenti"])
+    from bot.db import get_conn
+    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1, email_verified=1 WHERE id=1"); conn.commit(); conn.close()
+    insert_today("Concorso docenti", "https://x/1")
+    insert_today("Altro", "https://x/2")
+
+    count, channels = digest.send_user_digest(get_user_by_id(1))
+    assert count == 2 and channels == ["telegram", "email"]
+    tg = sent_messages[0]["text"]
+    assert "2 notizie trovate (🔔 1 con le tue parole chiave)" in tg
+    assert tg.index("🔔") < tg.index("🗞️") and "<b>docenti</b>" in tg
+    assert "2 notizie" in captured["subject"] and "1 con le tue parole chiave" in captured["html"]
+    assert "border-left" in captured["html"] and "parole chiave: docenti" in captured["text"]
+    assert delivered_news_ids(1, kind="digest", channel="email") == {1, 2}
+    assert delivered_news_ids(1, kind="digest", channel="telegram") == {1, 2}
+    assert get_user_by_id(1)["last_digest_date"] == f"{datetime.now():%Y-%m-%d}"
+
+
+# --- scheduling ------------------------------------------------------------------
+
+def test_is_due_uses_user_time_or_global_default_and_daily_guard():
+    today = f"{datetime.now():%Y-%m-%d}"
+    at = lambda h, m: datetime.now().replace(hour=h, minute=m)
+    # default globale del test config: 18:00
+    assert digest.is_due({"digest_time": None}, at(17, 59)) is False
+    assert digest.is_due({"digest_time": None}, at(18, 0)) is True
+    assert digest.is_due({"digest_time": "07:30"}, at(7, 29)) is False
+    assert digest.is_due({"digest_time": "07:30"}, at(9, 0)) is True
+    assert digest.is_due({"digest_time": "boh"}, at(18, 5)) is True      # orario non valido → default
+    assert digest.is_due({"digest_time": "07:30", "last_digest_date": today}, at(9, 0)) is False
+
+
+def test_run_digests_sends_once_per_day_and_respects_time(sent_messages):
+    add_user(1)                                    # id 1: default 18:00
+    add_user(2); set_preferences(2, digest_time="08:00")
+    add_user(3); set_preferences(3, notify_telegram=False)   # nessun canale
+    insert_today("Oggi", "https://x/1")
+    at = lambda h, m: datetime.now().replace(hour=h, minute=m)
+
+    assert digest.run_digests(now=at(7, 0)) == 0
+    assert digest.run_digests(now=at(8, 0)) == 1
+    assert [m["chat_id"] for m in sent_messages] == [2]
+    assert digest.run_digests(now=at(8, 1)) == 0        # già inviato oggi
+    assert digest.run_digests(now=at(18, 30)) == 1
+    assert [m["chat_id"] for m in sent_messages] == [2, 1]
+    assert digest.run_digests(now=at(23, 0)) == 0
+    assert get_user_by_id(3)["last_digest_date"] == f"{datetime.now():%Y-%m-%d}"  # marcato, niente da inviare
+
+
+def test_run_digests_force_sends_to_everyone(sent_messages):
+    add_user(1); add_user(2)
+    assert digest.run_digests(force=True) == 2
+    assert sorted(m["chat_id"] for m in sent_messages) == [1, 2]
+
+
+def test_run_digests_isolates_user_errors(sent_messages, monkeypatch):
+    add_user(1); add_user(2)
+    original = digest.send_user_digest
+
+    def flaky(user, now=None, mark=True):
+        if user["id"] == 1:
+            raise RuntimeError("boom")
+        return original(user, now=now, mark=mark)
+
+    monkeypatch.setattr(digest, "send_user_digest", flaky)
+    assert digest.run_digests(force=True) == 1
+    assert [m["chat_id"] for m in sent_messages] == [2]
+
+
+def test_manual_report_does_not_consume_daily_guard(sent_messages):
+    add_user(5)
+    report_generator.generate_report(target_chat_id=5)
+    assert [m["chat_id"] for m in sent_messages] == [5]
+    assert get_user_by_id(1)["last_digest_date"] is None
+
+
+def test_web_user_digest_goes_by_email_only(monkeypatch, sent_messages):
+    emails = []
+    monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: emails.append(to) or True)
+    user = create_web_user("prof@scuola.it", "h")
+    set_email_verified(user["id"], True)
+    insert_today("Oggi", "https://x/1")
+    assert digest.run_digests(force=True) == 1
+    assert emails == ["prof@scuola.it"] and sent_messages == []
+    assert delivered_news_ids(user["id"], kind="digest") == {1}

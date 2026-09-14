@@ -29,7 +29,11 @@ def test_get_user_unknown_returns_none():
 def test_new_user_has_empty_keyword_list_not_blank_string():
     add_user(1)
     assert get_user(1)["keywords"] == []
-    assert get_users() == [{"telegram_id": 1, "keywords": []}]
+    users = get_users()
+    assert len(users) == 1 and users[0]["telegram_id"] == 1 and users[0]["keywords"] == []
+    assert users[0]["id"] == 1 and users[0]["email"] is None
+    # default di un utente Telegram: alert immediati, solo Telegram
+    assert users[0]["alert_mode"] == "instant" and users[0]["notify_telegram"] and not users[0]["notify_email"]
 
 
 def test_update_keywords_roundtrip_strips_blanks():
@@ -52,8 +56,8 @@ def test_activate_deactivate_and_active_only_filter():
 # --- news -----------------------------------------------------------------
 
 def test_add_news_dedupes_on_link():
-    assert add_news("T1", "https://x/1", "S", "Mon, 29 Sep 2025 10:05:28 +0000", "c") is True
-    assert add_news("T1 bis", "https://x/1", "S", "Mon, 29 Sep 2025 10:05:28 +0000", "c") is False
+    assert add_news("T1", "https://x/1", "S", "Mon, 29 Sep 2025 10:05:28 +0000", "c") == 1
+    assert add_news("T1 bis", "https://x/1", "S", "Mon, 29 Sep 2025 10:05:28 +0000", "c") is None
     rows = get_recent_news()
     assert len(rows) == 1
     assert rows[0]["title"] == "T1"
