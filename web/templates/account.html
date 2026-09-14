@@ -4,6 +4,16 @@
 {% block content %}
 <h1>Il tuo account</h1>
 
+{% if user.email and not user.email_verified %}
+<section class="card warning">
+  <h2>Conferma il tuo indirizzo email</h2>
+  <p>Ti abbiamo inviato un link a <strong>{{ user.email }}</strong>. Finché non lo apri, le notifiche via email restano sospese.</p>
+  <form method="post" action="{{ url_for('auth.resend_verification') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button type="submit" class="button">Reinvia l'email di conferma</button>
+  </form>
+</section>
+{% endif %}
 {% if needs_consent %}
 <section class="card warning">
   <h2>Consenso richiesto</h2>
@@ -23,7 +33,7 @@
 <section class="card">
   <h2>Dati</h2>
   <dl>
-    <dt>Email</dt><dd>{{ user.email or '—' }}</dd>
+    <dt>Email</dt><dd>{{ user.email or '—' }}{% if user.email %} {% if user.email_verified %}✅ confermata{% else %}⚠️ da confermare{% endif %}{% endif %}</dd>
     <dt>Telegram</dt><dd>{% if user.telegram_id %}collegato{% else %}non collegato{% endif %}</dd>
     <dt>Notifiche</dt><dd>{% if user.active and not needs_consent %}attive{% else %}sospese{% endif %}
       · {{ 'riepilogo giornaliero' if user.alert_mode == 'digest' else 'avvisi immediati + riepilogo' }}</dd>

@@ -98,6 +98,22 @@ def format_digest(news_list, when=None):
     return subject, html, text
 
 
+# --- verifica indirizzo ---------------------------------------------------
+
+def format_verification(link):
+    """Email di conferma dell'indirizzo (double opt-in). Ritorna (subject, html, text)."""
+    subject = f"[{APP_NAME}] Conferma il tuo indirizzo email"
+    html = (f'<div style="{_STYLE}"><h2 style="margin:0 0 16px">Conferma il tuo indirizzo</h2>'
+            f"<p>Per ricevere le notifiche di {APP_NAME} conferma che questo indirizzo è tuo:</p>"
+            f'<p><a href="{escape_html(link)}" style="display:inline-block;padding:10px 16px;background:#1e3a8a;color:#fff;'
+            f'text-decoration:none;border-radius:6px">Conferma indirizzo</a></p>'
+            f'<p style="color:#777;font-size:13px">Il link vale 48 ore. Se non ti sei registrato tu, ignora questa email: '
+            f"non riceverai nulla.</p></div>")
+    text = (f"Per ricevere le notifiche di {APP_NAME} conferma il tuo indirizzo aprendo questo link (valido 48 ore):\n"
+            f"{link}\n\nSe non ti sei registrato tu, ignora questa email.\n")
+    return subject, html, text
+
+
 # --- interfaccia canale ---------------------------------------------------
 
 def send_alert(user, news, matched_keywords):

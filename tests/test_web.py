@@ -75,7 +75,7 @@ def test_security_headers_and_404(client):
 
 def test_register_creates_user_with_consent_and_logs_in(client, app):
     r = register(client)
-    assert r.status_code == 200 and "Il tuo account" in r.get_data(as_text=True)
+    assert r.status_code == 200 and "Benvenuto" in r.get_data(as_text=True)
     user = get_user_by_email(EMAIL)
     assert user and user["consent_version"] == app.config["PRIVACY_VERSION"] and user["consent_at"]
     assert user["alert_mode"] == "digest" and user["notify_email"] and user["active"]

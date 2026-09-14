@@ -3,6 +3,16 @@
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
 <h1>Preferenze</h1>
+{% if user.email and not user.email_verified %}
+<section class="card warning">
+  <h2>Conferma il tuo indirizzo email</h2>
+  <p>Ti abbiamo inviato un link a <strong>{{ user.email }}</strong>. Finché non lo apri, le notifiche via email restano sospese.</p>
+  <form method="post" action="{{ url_for('auth.resend_verification') }}">
+    <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+    <button type="submit" class="button">Reinvia l'email di conferma</button>
+  </form>
+</section>
+{% endif %}
 
 <form method="post" action="{{ url_for('prefs.save') }}" class="card">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -31,7 +41,7 @@
   <fieldset>
     <legend>Canali</legend>
     <label class="check"><input type="checkbox" name="notify_email" {% if user.notify_email %}checked{% endif %} {% if not user.email %}disabled{% endif %}>
-      Email{% if user.email %} <small class="muted">({{ user.email }})</small>{% endif %}</label>
+      Email{% if user.email %} <small class="muted">({{ user.email }}{% if not user.email_verified %}, da confermare{% endif %})</small>{% endif %}</label>
     <label class="check"><input type="checkbox" name="notify_telegram" {% if user.notify_telegram and user.telegram_id %}checked{% endif %} {% if not user.telegram_id %}disabled{% endif %}>
       Telegram{% if not user.telegram_id %} <small class="muted">(collega prima la chat, vedi sotto)</small>{% endif %}</label>
   </fieldset>

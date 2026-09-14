@@ -112,6 +112,15 @@ CREATE TABLE IF NOT EXISTS link_codes (
     expires_at DATETIME NOT NULL
 );
 
+-- Token usa-e-getta inviati via email (verifica indirizzo, in futuro reset password).
+CREATE TABLE IF NOT EXISTS email_tokens (
+    token TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    purpose TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL
+);
+
 -- Incidenti aperti dal watchdog: un avviso all'apertura, uno alla chiusura.
 CREATE TABLE IF NOT EXISTS watchdog_incidents (
     key TEXT PRIMARY KEY,

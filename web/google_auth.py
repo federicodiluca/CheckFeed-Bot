@@ -13,7 +13,7 @@ import secrets
 from authlib.integrations.flask_client import OAuth
 from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
 
-from bot.db_user import create_web_user, get_user_by_email, get_user_by_google_sub, set_google_sub
+from bot.db_user import create_web_user, get_user_by_email, get_user_by_google_sub, set_email_verified, set_google_sub
 from web import security
 
 bp = Blueprint("google", __name__)
@@ -74,6 +74,8 @@ def callback():
     if user:
         if not user.get("google_sub"):
             set_google_sub(user["id"], identity["sub"])
+        if not user.get("email_verified") and user.get("email") == identity["email"]:
+            set_email_verified(user["id"], True)
         security.login_user(user)
         return redirect(url_for("auth.account"))
 
@@ -99,6 +101,7 @@ def complete():
     if user is None:  # creato nel frattempo con la stessa email
         user = get_user_by_email(pending["email"])
     set_google_sub(user["id"], pending["sub"])
+    set_email_verified(user["id"], True)  # Google la garantisce verificata
     session.pop(PENDING_KEY, None)
     security.login_user(user)
     flash("Benvenuto! Il tuo account è pronto: imposta fonti e parole chiave nelle preferenze.", "success")

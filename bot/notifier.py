@@ -22,8 +22,8 @@ def channels_for(user):
     names = []
     if user.get("telegram_id") and user.get("notify_telegram", True):
         names.append(telegram_channel.NAME)
-    if user.get("email") and user.get("notify_email", False):
-        names.append(email_channel.NAME)
+    if user.get("email") and user.get("notify_email", False) and user.get("email_verified", True):
+        names.append(email_channel.NAME)  # solo indirizzi verificati (double opt-in)
     return names
 
 

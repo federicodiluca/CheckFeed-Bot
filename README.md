@@ -207,6 +207,8 @@ Pagine: home, registrazione (email + password, consenso privacy con versione e d
 oppure riepilogo + avvisi immediati), orario del riepilogo, aggiunta di nuove fonti con verifica.
 **Telegram**: dalla pagina preferenze si genera un codice e lo si invia al bot con `/link CODICE`; se quella chat
 usava già il bot, parole chiave e fonti vengono unite all'account web.
+**Verifica email (double opt-in)**: alla registrazione arriva un link di conferma (valido 48 ore); finché l'indirizzo
+non è confermato il canale email resta sospeso (gli account creati con Google sono già verificati).
 **Accedi con Google**: opzionale, attivo se `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` sono impostati
 (anche in questo caso il consenso privacy viene chiesto prima di creare l'account).
 

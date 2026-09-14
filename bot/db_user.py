@@ -212,6 +212,42 @@ def consume_link_code(code):
     return row["user_id"] if row else None
 
 
+# --- token email (verifica indirizzo) ---------------------------------------
+
+EMAIL_TOKEN_TTL_HOURS = 48
+EMAIL_TOKEN_RESEND_SECONDS = 60
+
+
+def create_email_token(user_id, token, purpose="verify"):
+    """Registra un token (uno solo attivo per utente e scopo). Ritorna False se ne è stato
+    creato uno da meno di EMAIL_TOKEN_RESEND_SECONDS (anti-spam sul reinvio)."""
+    conn = get_conn()
+    recent = conn.execute(
+        "SELECT 1 FROM email_tokens WHERE user_id=? AND purpose=? AND datetime(created_at) > datetime('now', ?)",
+        (user_id, purpose, f"-{EMAIL_TOKEN_RESEND_SECONDS} seconds")).fetchone()
+    if recent:
+        conn.close()
+        return False
+    conn.execute("DELETE FROM email_tokens WHERE (user_id=? AND purpose=?) OR datetime(expires_at) < datetime('now')",
+                 (user_id, purpose))
+    conn.execute("INSERT INTO email_tokens (token, user_id, purpose, expires_at) VALUES (?, ?, ?, datetime('now', ?))",
+                 (token, user_id, purpose, f"+{EMAIL_TOKEN_TTL_HOURS} hours"))
+    conn.commit()
+    conn.close()
+    return True
+
+
+def consume_email_token(token, purpose="verify"):
+    """Ritorna lo user_id del token valido (e lo cancella), oppure None."""
+    conn = get_conn()
+    row = conn.execute("SELECT user_id FROM email_tokens WHERE token=? AND purpose=? AND datetime(expires_at) >= datetime('now')",
+                       (token or "", purpose)).fetchone()
+    conn.execute("DELETE FROM email_tokens WHERE token=? OR datetime(expires_at) < datetime('now')", (token or "",))
+    conn.commit()
+    conn.close()
+    return row["user_id"] if row else None
+
+
 # --- stato / preferenze ---------------------------------------------------
 
 def set_active(user_id, active):
@@ -294,6 +330,8 @@ def delete_user(user_id):
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("DELETE FROM deliveries WHERE user_id=?", (user_id,))
+    cur.execute("DELETE FROM email_tokens WHERE user_id=?", (user_id,))
+    cur.execute("DELETE FROM link_codes WHERE user_id=?", (user_id,))
     cur.execute("DELETE FROM user_sources WHERE user_id=?", (user_id,))
     cur.execute("UPDATE sources SET added_by=NULL WHERE added_by=?", (user_id,))
     cur.execute("DELETE FROM users WHERE id=?", (user_id,))

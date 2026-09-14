@@ -7,7 +7,7 @@ from bot.channels import email_channel
 from bot.db_deliveries import delivered_news_ids
 from bot.db_news import add_news
 from bot.db_sources import set_user_source
-from bot.db_user import add_user, create_web_user, get_user_by_id, set_preferences, update_keywords
+from bot.db_user import add_user, create_web_user, get_user_by_id, set_email_verified, set_preferences, update_keywords
 from tests.fixtures import rss
 
 UNO = "https://example.org/uno/feed/"
@@ -36,7 +36,7 @@ def test_alert_delivery_recorded_per_channel(fake_sources, sent_messages, monkey
     add_user(10); update_keywords(10, ["docenti"])
     conn_user = get_user_by_id(1)
     from bot.db import get_conn
-    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1 WHERE id=1"); conn.commit(); conn.close()
+    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1, email_verified=1 WHERE id=1"); conn.commit(); conn.close()
     fake_sources[UNO] = rss([{"title": "Concorso docenti", "link": "https://x/1"}])
 
     news_fetcher.fetch_news()
@@ -78,7 +78,7 @@ def test_telegram_and_email_digest_highlight_matches(sent_messages, monkeypatch)
     monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: captured.update(subject=subject, html=html, text=text) or True)
     add_user(7); update_keywords(7, ["docenti"])
     from bot.db import get_conn
-    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1 WHERE id=1"); conn.commit(); conn.close()
+    conn = get_conn(); conn.execute("UPDATE users SET email='a@b.it', notify_email=1, email_verified=1 WHERE id=1"); conn.commit(); conn.close()
     insert_today("Concorso docenti", "https://x/1")
     insert_today("Altro", "https://x/2")
 
@@ -156,6 +156,7 @@ def test_web_user_digest_goes_by_email_only(monkeypatch, sent_messages):
     emails = []
     monkeypatch.setattr(email_channel, "send_email", lambda to, subject, html, text=None: emails.append(to) or True)
     user = create_web_user("prof@scuola.it", "h")
+    set_email_verified(user["id"], True)
     insert_today("Oggi", "https://x/1")
     assert digest.run_digests(force=True) == 1
     assert emails == ["prof@scuola.it"] and sent_messages == []

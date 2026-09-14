@@ -1,10 +1,15 @@
 """Registrazione, login, logout e area account (consenso, export, cancellazione)."""
 import re
+import secrets
 
 from flask import Blueprint, abort, current_app, flash, jsonify, redirect, render_template, request, url_for
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from bot import mailer
+from bot.channels.email_channel import format_verification
 from bot.db_user import (
+    consume_email_token,
+    create_email_token,
     create_web_user,
     delete_user,
     export_user_data,
@@ -13,8 +18,10 @@ from bot.db_user import (
     revoke_consent,
     set_active,
     set_consent,
+    set_email_verified,
     set_password_hash,
 )
+from bot.logger import log
 from web import security
 
 bp = Blueprint("auth", __name__)
@@ -38,6 +45,51 @@ def _password_problem(password):
 def _safe_next(target):
     """Solo percorsi relativi interni: evita open redirect."""
     return target if target and target.startswith("/") and not target.startswith("//") else url_for("auth.account")
+
+
+# --- verifica email (double opt-in) -------------------------------------------
+
+def send_verification_email(user):
+    """Genera un token e invia il link di conferma. Ritorna True se inviata,
+    False se troppo presto (anti-spam) o se l'email è disabilitata (link solo nel log)."""
+    token = secrets.token_urlsafe(32)
+    if not create_email_token(user["id"], token, "verify"):
+        return False
+    base = current_app.config.get("BASE_URL") or request.url_root.rstrip("/")
+    link = f"{base}{url_for('auth.verify_email', token=token)}"
+    subject, html, text = format_verification(link)
+    try:
+        sent = mailer.send_email(user["email"], subject, html, text)
+    except mailer.EmailError as e:
+        log(f"❌ Email di verifica non inviata a {user['email']}: {e}")
+        return False
+    if not sent:
+        log(f"✉️ [email disabilitata] link di verifica per {user['email']}: {link}")
+    return sent
+
+
+@bp.get("/verifica-email/<token>")
+def verify_email(token):
+    user_id = consume_email_token(token, "verify")
+    if user_id is None:
+        flash("Link di conferma non valido o scaduto. Richiedine uno nuovo dalla pagina Account.", "error")
+        return redirect(url_for("auth.login"))
+    set_email_verified(user_id, True)
+    flash("Indirizzo confermato: le notifiche via email sono attive.", "success")
+    return redirect(url_for("auth.account") if security.current_user() else url_for("auth.login"))
+
+
+@bp.post("/account/verifica/reinvia")
+@security.login_required
+def resend_verification():
+    user = security.current_user()
+    if user["email_verified"]:
+        flash("Il tuo indirizzo è già confermato.", "info")
+    elif send_verification_email(user):
+        flash(f"Email di conferma inviata a {user['email']}. Controlla anche lo spam.", "success")
+    else:
+        flash("Email già inviata da poco o servizio email non disponibile: riprova tra un minuto.", "error")
+    return redirect(url_for("auth.account"))
 
 
 # --- registrazione ----------------------------------------------------------
@@ -74,7 +126,9 @@ def register():
         return redirect(url_for("auth.login"))
 
     security.login_user(user)
-    flash("Benvenuto! Il tuo account è pronto: imposta fonti e parole chiave nelle preferenze.", "success")
+    send_verification_email(user)
+    flash("Benvenuto! Ti abbiamo inviato un'email: conferma l'indirizzo per attivare le notifiche. "
+          "Intanto imposta fonti e parole chiave.", "success")
     return redirect(url_for("prefs.show"))
 
 
