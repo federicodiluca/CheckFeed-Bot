@@ -33,7 +33,8 @@ a { color: var(--primary); }
 .site-header { border-bottom: 1px solid var(--border); background: var(--card); }
 .site-header nav { max-width: 960px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .site-header ul { list-style: none; margin: 0 0 0 auto; padding: 0; display: flex; gap: 12px; align-items: center; }
-.brand { font-weight: 700; text-decoration: none; color: var(--fg); }
+.brand { font-weight: 700; text-decoration: none; color: var(--fg); display: inline-flex; align-items: center; gap: 8px; }
+.brand-logo { display: block; border-radius: 6px; }
 
 .container { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
 .site-footer { border-top: 1px solid var(--border); padding: 16px; text-align: center; color: var(--muted); font-size: .9rem; }

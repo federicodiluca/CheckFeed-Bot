@@ -17,7 +17,6 @@
   <meta name="theme-color" content="#1e3a8a" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
   <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
-  <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" sizes="any">
   <link rel="icon" href="{{ url_for('static', filename='favicon-16x16.png') }}" type="image/png" sizes="16x16">
   <link rel="icon" href="{{ url_for('static', filename='favicon-32x32.png') }}" type="image/png" sizes="32x32">
   <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
@@ -30,7 +29,7 @@
   <a class="skip" href="#main">Vai al contenuto</a>
   <header class="site-header">
     <nav aria-label="Principale">
-      <a class="brand" href="{{ url_for('index') }}">🏫 {{ app_name }}</a>
+      <a class="brand" href="{{ url_for('index') }}"><img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28" class="brand-logo">{{ app_name }}</a>
       <ul>
         {% if current_user %}
           <li><a href="{{ url_for('prefs.show') }}">Preferenze</a></li>
