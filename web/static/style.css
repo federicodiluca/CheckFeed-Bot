@@ -73,7 +73,7 @@ code { font-family: var(--mono); background: var(--surface-2); padding: 1px 6px;
 .site-header li a, .site-header button.link { display: inline-block; padding: 8px 12px; border-radius: var(--radius-sm); color: var(--fg-2); text-decoration: none; font-weight: 500; font-size: .95rem; }
 .site-header li a:hover, .site-header button.link:hover { background: var(--bg-soft); color: var(--fg); }
 .site-header li a.button { color: var(--on-primary); box-shadow: none; }
-.site-header li a.button:hover { background: var(--primary-hover); }
+.site-header li a.button:hover, .site-header li a.button:focus-visible { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary); }
 form.inline { display: inline; }
 button.link { background: none; border: 0; cursor: pointer; font: inherit; }
 button.icon { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--fg-2); cursor: pointer; padding: 6px 8px; line-height: 0; display: inline-flex; }
@@ -92,12 +92,13 @@ button.icon:hover { background: var(--bg-soft); }
   background: var(--surface); color: var(--fg); text-decoration: none; font: inherit; font-weight: 600; font-size: .95rem;
   cursor: pointer; transition: background .15s, border-color .15s, transform .05s; box-shadow: var(--shadow-sm);
 }
-.button:hover { background: var(--bg-soft); color: var(--fg); }
+.button:hover, .button:focus-visible { background: var(--bg-soft); color: var(--fg); border-color: var(--border-strong); }
+a.button:hover { color: var(--fg); }
 .button:active { transform: translateY(1px); }
 .button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary); }
+.button.primary:hover, .button.primary:focus-visible, a.button.primary:hover { background: var(--primary-hover); border-color: var(--primary-hover); color: var(--on-primary); }
 .button.danger { color: var(--danger); border-color: var(--danger); background: transparent; box-shadow: none; }
-.button.danger:hover { background: var(--danger-soft); }
+.button.danger:hover, a.button.danger:hover { background: var(--danger-soft); color: var(--danger); }
 .button.lg { padding: 13px 22px; font-size: 1.05rem; }
 .button + .button { margin-left: var(--space-2); }
 

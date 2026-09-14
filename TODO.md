@@ -20,6 +20,7 @@ di default, alert immediato opzionale).
 ## Requisiti trasversali (richiesti esplicitamente)
 
 - [ ] **SEO** — priorità altissima: SSR, `<title>`/meta description/OpenGraph, canonical, `sitemap.xml`, `robots.txt`, URL parlanti, HTML semantico, pagine pubbliche indicizzabili
+- [x] Licenza AGPL-3.0: consenso al rilicenziamento ricevuto da tutti i contributor (Fabio, 14/09/2026)
 - [ ] **GDPR — nessun rischio**: privacy policy e termini, consenso esplicito con timestamp e versione, **revoca dei consensi** dall'area utente, export ed eliminazione dell'account (diritto all'oblio), minimizzazione dati, registro trattamenti, provider email/hosting in UE dove possibile, niente tracker di terze parti senza consenso
 - [x] **Login Google** (OAuth 2.0 / OpenID Connect) oltre a email+password — serve creare il client nella Google Cloud Console
 - [x] **Server SMTP** come alternativa all'API Resend per l'invio email (in uso con Brevo)
