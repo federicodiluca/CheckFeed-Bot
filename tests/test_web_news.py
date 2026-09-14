@@ -120,13 +120,13 @@ def test_my_news_daily_recap_highlights_keywords(client, some_news):
     set_keywords(user["id"], ["GPS", "A041"])
     html = client.get("/le-mie-notizie").get_data(as_text=True)
     assert "Riepilogo del giorno" in html and 'content="noindex, nofollow"' in html
-    assert "Graduatorie provinciali docenti" in html and "🔔 GPS" in html
+    assert "Graduatorie provinciali docenti" in html and "</svg> GPS" in html
     assert "Trasferimenti" not in html                # è di ieri
     assert "1 notizie" in html and "1 con le tue parole chiave" in html
 
     yesterday = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
     html = client.get(f"/le-mie-notizie?giorno={yesterday}").get_data(as_text=True)
-    assert "Trasferimenti 2026" in html and "🔔 A041" in html and "Graduatorie" not in html
+    assert "Trasferimenti 2026" in html and "</svg> A041" in html and "Graduatorie" not in html
     html = client.get("/le-mie-notizie?giorno=2999-01-01").get_data(as_text=True)   # futuro → oggi
     assert "Graduatorie" in html
     html = client.get("/le-mie-notizie?giorno=boh").get_data(as_text=True)

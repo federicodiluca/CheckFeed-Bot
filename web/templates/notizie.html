@@ -6,7 +6,7 @@
 <div class="page-head">
 <h1>{% if source %}Notizie da {{ source.name }}{% else %}Ultime notizie dal mondo scuola{% endif %}</h1>
 <p>
-  {% if source %}<a href="{{ source.url }}" rel="noopener nofollow">Sito ufficiale ↗</a> · <a href="{{ url_for('news.index') }}">Tutte le fonti</a>
+  {% if source %}<a href="{{ source.url }}" rel="noopener nofollow">Sito ufficiale</a> · <a href="{{ url_for('news.index') }}">Tutte le fonti</a>
   {% else %}Questo è quello che {{ app_name }} raccoglie ogni giorno da {{ sources | length }} fonti.
   {% if not current_user %}<a href="{{ url_for('auth.register') }}">Registrati</a> per ricevere solo ciò che ti interessa, via email o Telegram.{% endif %}{% endif %}
 </p>

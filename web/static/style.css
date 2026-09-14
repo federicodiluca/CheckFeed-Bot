@@ -76,14 +76,14 @@ code { font-family: var(--mono); background: var(--surface-2); padding: 1px 6px;
 .site-header li a.button:hover { background: var(--primary-hover); }
 form.inline { display: inline; }
 button.link { background: none; border: 0; cursor: pointer; font: inherit; }
-button.icon { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--fg-2); cursor: pointer; font-size: 1rem; padding: 6px 10px; line-height: 1; }
+button.icon { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--fg-2); cursor: pointer; padding: 6px 8px; line-height: 0; display: inline-flex; }
 button.icon:hover { background: var(--bg-soft); }
 
 /* footer */
 .site-footer { border-top: 1px solid var(--border); padding: var(--space-6) var(--space-4); color: var(--muted); font-size: .9rem; }
-.site-footer .inner { max-width: var(--max); margin: 0 auto; display: grid; gap: var(--space-2); }
+.site-footer .inner { max-width: var(--max); margin: 0 auto; display: grid; gap: var(--space-2); text-align: center; justify-items: center; }
 .site-footer p { margin: 0; }
-.site-footer nav { display: flex; gap: var(--space-4); flex-wrap: wrap; }
+.site-footer nav { display: flex; gap: var(--space-4); flex-wrap: wrap; justify-content: center; }
 
 /* ---------- componenti ------------------------------------------------ */
 .button, button.button {
@@ -176,7 +176,17 @@ form.danger { border-top: 1px solid var(--border); margin-top: var(--space-4); p
 .section h2 { font-size: 1.5rem; margin-bottom: var(--space-4); }
 .feature { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: var(--space-5); }
 .feature .num { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 50%; background: var(--primary); color: var(--on-primary); font-weight: 800; margin-bottom: var(--space-3); }
-.feature .ico { font-size: 1.6rem; margin-bottom: var(--space-2); }
+.feature .ico { display: inline-flex; gap: 6px; padding: 10px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); margin-bottom: var(--space-3); }
+.ico-svg { display: inline-block; vertical-align: -.15em; flex: none; }
+.with-ico { display: inline-flex; align-items: center; gap: 6px; }
+.badge .ico-svg { vertical-align: -.1em; }
+.badge.ok { background: var(--success-soft); color: inherit; }
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .only-light { display: none; } :root:not([data-theme="light"]) .only-dark { display: inline; } }
+:root[data-theme="dark"] .only-light { display: none; }
+:root[data-theme="dark"] .only-dark { display: inline; }
+:root[data-theme="light"] .only-light { display: inline; }
+:root[data-theme="light"] .only-dark { display: none; }
 .feature h3 { margin-bottom: var(--space-2); }
 .feature p { margin: 0; color: var(--fg-2); }
 .section .more { margin-top: var(--space-4); }

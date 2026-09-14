@@ -46,7 +46,7 @@
           <li><a href="{{ url_for('auth.login') }}">Accedi</a></li>
           <li><a class="button" href="{{ url_for('auth.register') }}">Registrati</a></li>
         {% endif %}
-        <li><button type="button" id="theme-toggle" class="icon" aria-label="Cambia tema chiaro/scuro" title="Tema chiaro/scuro">◐</button></li>
+        <li><button type="button" id="theme-toggle" class="icon" aria-label="Cambia tema chiaro/scuro" title="Tema chiaro/scuro"><span class="only-light">{% from "_icons.html" import icon %}{{ icon('moon', 18) }}</span><span class="only-dark">{{ icon('sun', 18) }}</span></button></li>
       </ul>
     </nav>
   </header>

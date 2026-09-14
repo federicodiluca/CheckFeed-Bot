@@ -14,7 +14,9 @@ import secrets
 from flask import Flask, render_template, request
 
 from bot.db import init_db
+from bot.config_loader import get_config
 from bot.db_news import search_news
+from bot.db_sources import sync_config_sources
 from bot.env import env, env_bool
 from bot.utils import format_local_datetime, strip_html
 from web import google_auth, seo, security
@@ -64,6 +66,9 @@ def create_app(test_config=None):
         app.config.update(test_config)
 
     init_db()
+    # Le fonti di config.json vivono nel DB: le allinea anche il web, così le pagine
+    # funzionano anche se il bot non è ancora partito (idempotente, come in main.py).
+    sync_config_sources(get_config()["sites"])
     security.init_app(app)
     seo.init_app(app)
     app.register_blueprint(auth_bp)

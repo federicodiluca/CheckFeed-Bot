@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Il tuo account — {{ app_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
@@ -33,7 +34,7 @@
 <section class="card">
   <h2>Dati</h2>
   <dl class="kv">
-    <dt>Email</dt><dd>{{ user.email or '—' }}{% if user.email %} {% if user.email_verified %}✅ confermata{% else %}⚠️ da confermare{% endif %}{% endif %}</dd>
+    <dt>Email</dt><dd>{{ user.email or '—' }}{% if user.email %} {% if user.email_verified %}<span class="badge ok">{{ icon('check', 12) }} confermata</span>{% else %}<span class="badge">da confermare</span>{% endif %}{% endif %}</dd>
     <dt>Telegram</dt><dd>{% if user.telegram_id %}collegato{% else %}non collegato{% endif %}</dd>
     <dt>Notifiche</dt><dd>{% if user.active and not needs_consent %}attive{% else %}sospese{% endif %}
       · {{ 'riepilogo giornaliero' if user.alert_mode == 'digest' else 'avvisi immediati + riepilogo' }}</dd>
@@ -57,7 +58,7 @@
 
 <section class="card">
   <h2>I tuoi diritti (GDPR)</h2>
-  <p><a class="button" href="{{ url_for('auth.export_data') }}">Scarica i tuoi dati (JSON)</a></p>
+  <p><a class="button" href="{{ url_for('auth.export_data') }}">{{ icon('download', 18) }} Scarica i tuoi dati (JSON)</a></p>
   {% if not needs_consent %}
   <form method="post" action="{{ url_for('auth.revoke') }}">
     <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
