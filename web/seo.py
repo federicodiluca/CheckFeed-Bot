@@ -12,7 +12,7 @@ PUBLIC_PAGES = [
     ("privacy", "0.2", "yearly"),
     ("terms", "0.2", "yearly"),
 ]
-PRIVATE_PREFIXES = ("/account", "/preferenze", "/le-mie-notizie")
+PRIVATE_PREFIXES = ("/account", "/preferenze", "/le-mie-notizie")  # /preferenze copre anche /preferenze/area
 
 
 def canonical_url(req=None):

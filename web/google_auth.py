@@ -104,5 +104,5 @@ def complete():
     set_email_verified(user["id"], True)  # Google la garantisce verificata
     session.pop(PENDING_KEY, None)
     security.login_user(user)
-    flash("Benvenuto! Il tuo account è pronto: imposta fonti e parole chiave nelle preferenze.", "success")
-    return redirect(url_for("prefs.show"))
+    flash("Benvenuto! Il tuo account è pronto: dicci dove insegni per scegliere le fonti giuste.", "success")
+    return redirect(url_for("prefs.area", benvenuto=1))

@@ -5,7 +5,8 @@ import secrets
 
 from flask import Blueprint, current_app, flash, redirect, render_template, request, url_for
 
-from bot.db_sources import add_user_source, get_source_by_url, get_user_sources, set_user_source
+from bot.catalog import REGIONS, group_sources, provinces_by_region
+from bot.db_sources import add_user_source, follow_area, get_source_by_url, get_sources, get_user_sources, set_user_source, user_area
 from bot.db_user import ALERT_MODES, create_link_code, set_keywords, set_preferences, unlink_telegram
 from bot.digest import default_digest_time
 from bot.logger import log
@@ -27,7 +28,9 @@ LINK_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # senza 0/O e 1/I
 def show():
     user = security.current_user()
     sources = get_user_sources(user["id"])
-    return render_template("preferenze.html", user=user, sources=sources,
+    region, provinces = user_area(user["id"])
+    return render_template("preferenze.html", user=user, sources=sources, groups=group_sources(sources),
+                           area_region=region, area_provinces=provinces,
                            default_time=default_digest_time(), link_code=request.args.get("codice"))
 
 
@@ -98,6 +101,32 @@ def add_source():
     fetch_source(source, notify=False)  # prima lettura senza notifiche
     flash(f"Fonte {'aggiunta' if created else 'riattivata'}: {source['name']} ({len(detected['items'])} notizie trovate).", "success")
     return redirect(url_for("prefs.show"))
+
+
+# --- area: regione e province ("Dove insegni?") ------------------------------
+
+@bp.get("/preferenze/area")
+@security.login_required
+def area():
+    user = security.current_user()
+    region, provinces = user_area(user["id"])
+    return render_template("area.html", user=user, regions=REGIONS, provinces_by_region=provinces_by_region(get_sources()),
+                           region=region, provinces=provinces, welcome=request.args.get("benvenuto") == "1")
+
+
+@bp.post("/preferenze/area")
+@security.login_required
+def save_area():
+    user = security.current_user()
+    region = (request.form.get("region") or "").strip()
+    if region not in REGIONS:
+        flash("Scegli la tua regione.", "error")
+        return redirect(url_for("prefs.area"))
+    provinces = [p for p in request.form.getlist("provinces") if p]
+    count = follow_area(user["id"], region, provinces)
+    where = region + (f" ({', '.join(provinces)})" if provinces else "")
+    flash(f"Area impostata: {where}. Ora segui {count} fonti; puoi rifinire la scelta qui sotto.", "success")
+    return redirect(url_for("prefs.show") + "#fonti")
 
 
 # --- Telegram ---------------------------------------------------------------

@@ -85,8 +85,8 @@ Esempio base:
 Solo `telegram_token` è obbligatorio; gli altri campi hanno un default.
 
 **Catalogo fonti italiane** (`"catalog": "italy"`, attivo per default; `false` per disattivarlo): il bot include
-automaticamente le fonti di [bot/catalog/italy.json](bot/catalog/italy.json) — notizie del MIM e tutti gli USR
-regionali (in arrivo gli USP provinciali). USR e USP sono *opt-in* (`default_follow: false`): ogni utente sceglie
+automaticamente le fonti di [bot/catalog/italy.json](bot/catalog/italy.json) — notizie del MIM, tutti gli USR
+regionali e gli USP provinciali (102 fonti verificate; alcune province mancano ancora, vedi TODO.md). USR e USP sono *opt-in* (`default_follow: false`): ogni utente sceglie
 la sua regione/provincia. Ogni voce ha `kind` (`usr`/`usp`/`mim`/`other`), `region` e `province`; gli stessi campi
 si possono usare anche nelle `sites` di `config.json`. Per verificare che tutte le fonti siano leggibili:
 
@@ -213,7 +213,8 @@ Pagine: home, registrazione (email + password, consenso privacy con versione e d
 (cambio password, **export dei dati**, **revoca del consenso**, **cancellazione definitiva**), privacy e termini.
 `robots.txt` e `sitemap.xml` sono generati; le pagine riservate sono `noindex`. Tema chiaro/scuro automatico con toggle.
 
-**Preferenze** (`/preferenze`): fonti seguite, parole chiave, canali (email/Telegram), frequenza (solo riepilogo
+**Dove insegni?** (`/preferenze/area`, proposto alla registrazione): scegli regione e province e segui in automatico
+MIM + USR + USP giusti. **Preferenze** (`/preferenze`): fonti raggruppate per regione con ricerca istantanea, parole chiave, canali (email/Telegram), frequenza (solo riepilogo
 oppure riepilogo + avvisi immediati), orario del riepilogo, aggiunta di nuove fonti con verifica.
 **Telegram**: dalla pagina preferenze si genera un codice e lo si invia al bot con `/link CODICE`; se quella chat
 usava già il bot, parole chiave e fonti vengono unite all'account web.

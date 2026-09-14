@@ -202,7 +202,7 @@ def test_google_new_user_needs_consent_then_created(gapp, monkeypatch):
     r = c.post("/accedi/google/completa", data={"_csrf": tok})
     assert r.status_code == 400
     r = c.post("/accedi/google/completa", data={"_csrf": tok, "consent": "on"})
-    assert r.headers["Location"].endswith("/preferenze")
+    assert "/preferenze/area" in r.headers["Location"]
     user = get_user_by_email("g.user@gmail.com")
     assert user["google_sub"] == "sub-123" and user["consent_at"] and user["notify_email"]
     assert c.get("/preferenze").status_code == 200

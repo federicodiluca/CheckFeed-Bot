@@ -223,3 +223,19 @@ form.danger { border-top: 1px solid var(--border); margin-top: var(--space-4); p
 .prose { max-width: 720px; }
 .prose h2 { margin-top: var(--space-6); font-size: 1.2rem; }
 .prose li { margin-bottom: var(--space-1); }
+
+/* ---------- fonti per area -------------------------------------------- */
+.auth.wide { max-width: 720px; }
+.area-form select { width: 100%; }
+.area-strip { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin: 0 0 var(--space-3); }
+.area-strip .button { margin: 0; padding: 6px 12px; font-size: .9rem; }
+#sources-search { margin-bottom: var(--space-3); }
+details.source-group { border: 1px solid var(--border); border-radius: var(--radius-sm); margin: 0 0 var(--space-2); background: var(--surface-2); }
+details.source-group summary { cursor: pointer; padding: 10px 12px; font-weight: 600; display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; list-style: none; }
+details.source-group summary::-webkit-details-marker { display: none; }
+details.source-group summary::before { content: "B8"; color: var(--muted); }
+details.source-group[open] summary::before { content: "BE"; }
+details.source-group summary .group-count { font-weight: 400; font-size: .85rem; }
+details.source-group summary .group-actions { margin-left: auto; font-weight: 400; font-size: .85rem; }
+details.source-group .sources { padding: 4px 12px 10px 28px; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }

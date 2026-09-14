@@ -197,3 +197,33 @@ def get_followers_map(users):
             if _effective(s, user_over.get(s["id"])):
                 out[s["id"]].append(user)
     return out
+
+
+def follow_area(user_id, region, provinces=()):
+    """Imposta le fonti seguite dall'utente in base all'area (regione + province):
+    segue nazionali + USR + USP dell'area, smette di seguire USR/USP di altre aree,
+    non tocca le fonti custom ('other'). Ritorna il numero di fonti seguite."""
+    from bot.catalog import sources_for_area
+    sources = get_sources()
+    chosen = {s["id"] for s in sources_for_area(sources, region, provinces)}
+    conn = get_conn()
+    cur = conn.cursor()
+    for s in sources:
+        if s["kind"] in ("usr", "usp", "mim"):
+            cur.execute("INSERT OR REPLACE INTO user_sources (user_id, source_id, follow) VALUES (?, ?, ?)",
+                        (user_id, s["id"], 1 if s["id"] in chosen else 0))
+    conn.commit()
+    conn.close()
+    return len(chosen)
+
+
+def user_area(user_id):
+    """(regione, [province]) dedotte dalle fonti USR/USP seguite, oppure (None, [])."""
+    from bot.catalog import provinces_of
+    followed = [s for s in get_user_sources(user_id) if s["followed"] and s["kind"] in ("usr", "usp")]
+    regions = sorted({s["region"] for s in followed if s.get("region")})
+    if not regions:
+        return None, []
+    region = regions[0]
+    provinces = sorted({p for s in followed if s["kind"] == "usp" and s.get("region") == region for p in provinces_of(s)})
+    return region, provinces

@@ -24,15 +24,29 @@
     <textarea name="keywords" id="keywords">{{ user.keywords | join(', ') }}</textarea>
   </fieldset>
 
-  <fieldset>
+  <fieldset id="fonti">
     <legend>Fonti seguite</legend>
+    <p class="area-strip">
+      {% if area_region %}<strong>La tua area:</strong> {{ area_region }}{% if area_provinces %} · {{ area_provinces | join(', ') }}{% endif %}
+      {% else %}<strong>Nessuna area impostata.</strong>{% endif %}
+      <a class="button" href="{{ url_for('prefs.area') }}">{% if area_region %}Cambia area{% else %}Scegli regione e province{% endif %}</a>
+    </p>
     {% if sources %}
-    <ul class="sources">
-      {% for s in sources %}
-      <li><label><input type="checkbox" name="sources" value="{{ s.id }}" {% if s.followed %}checked{% endif %}>
-        {{ s.name }}{% if s.type == 'html' %} <small class="muted">(pagina)</small>{% endif %}</label></li>
-      {% endfor %}
-    </ul>
+    <label for="sources-search" class="visually-hidden">Cerca una fonte</label>
+    <input type="search" id="sources-search" placeholder="Cerca una fonte (es. Bologna, USR, Ministero)…" autocomplete="off">
+    {% for group, items in groups %}
+    {% set n_followed = items | selectattr('followed') | list | length %}
+    <details class="source-group" {% if n_followed or group == 'Altre fonti' %}open{% endif %}>
+      <summary><span>{{ group }}</span> <span class="group-count muted">{{ n_followed }} seguite</span>
+        <span class="group-actions"><button type="button" class="link" data-group-all="1">tutte</button> · <button type="button" class="link" data-group-all="0">nessuna</button></span></summary>
+      <ul class="sources">
+        {% for s in items %}
+        <li><label><input type="checkbox" name="sources" value="{{ s.id }}" {% if s.followed %}checked{% endif %}>
+          {{ s.name }}{% if s.kind == 'usp' and s.province %} <small class="muted">({{ s.province.replace('|', ', ') }})</small>{% endif %}</label></li>
+        {% endfor %}
+      </ul>
+    </details>
+    {% endfor %}
     {% else %}
     <p class="muted">Nessuna fonte disponibile.</p>
     {% endif %}
@@ -95,4 +109,5 @@
     {% endif %}
   {% endif %}
 </section>
+<script src="{{ url_for('static', filename='sources.js') }}"></script>
 {% endblock %}

@@ -128,8 +128,8 @@ def register():
     security.login_user(user)
     send_verification_email(user)
     flash("Benvenuto! Ti abbiamo inviato un'email: conferma l'indirizzo per attivare le notifiche. "
-          "Intanto imposta fonti e parole chiave.", "success")
-    return redirect(url_for("prefs.show"))
+          "Intanto dicci dove insegni.", "success")
+    return redirect(url_for("prefs.area", benvenuto=1))
 
 
 # --- login / logout ---------------------------------------------------------
