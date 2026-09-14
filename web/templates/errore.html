@@ -2,7 +2,9 @@
 {% block title %}Errore {{ code }} — {{ app_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex">{% endblock %}
 {% block content %}
+<div class="auth">
 <h1>Errore {{ code }}</h1>
-<p>{{ message }}</p>
-<p><a class="button" href="{{ url_for('index') }}">Torna alla home</a></p>
+<p class="empty">{{ message }}</p>
+<p><a class="button primary" href="{{ url_for('index') }}">Torna alla home</a></p>
+</div>
 {% endblock %}

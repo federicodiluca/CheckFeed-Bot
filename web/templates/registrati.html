@@ -2,6 +2,7 @@
 {% block title %}Registrati — {{ app_name }}{% endblock %}
 {% block description %}Crea un account gratuito per ricevere via email o Telegram le notizie dal mondo scuola che contano per te.{% endblock %}
 {% block content %}
+<div class="auth">
 <h1>Crea il tuo account</h1>
 <form method="post" class="card" novalidate>
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -20,6 +21,7 @@
 </form>
 {% if google_enabled %}
 <p class="or">oppure</p>
-<p><a class="button" href="{{ url_for('google.start') }}">Registrati con Google</a></p>
+<p><a class="button google" href="{{ url_for('google.start') }}">Registrati con Google</a></p>
 {% endif %}
+</div>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% block title %}Preferenze — {{ app_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
-<h1>Preferenze</h1>
+<div class="page-head"><h1>Preferenze</h1><p>Cosa seguire, quali parole cercare, dove e quando ricevere le notifiche.</p></div>
 {% if user.email and not user.email_verified %}
 <section class="card warning">
   <h2>Conferma il tuo indirizzo email</h2>

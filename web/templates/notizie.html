@@ -3,31 +3,33 @@
 {% block description %}{% if source %}Le ultime notizie pubblicate da {{ source.name }}, raccolte automaticamente da {{ app_name }}.{% else %}Le ultime notizie da Uffici Scolastici Regionali, Provinciali e Ministero, tutte in una pagina: graduatorie, trasferimenti, circolari, concorsi.{% endif %}{% endblock %}
 {% block robots %}{% if noindex or pages.current > 1 %}<meta name="robots" content="noindex, follow">{% endif %}{% endblock %}
 {% block content %}
+<div class="page-head">
 <h1>{% if source %}Notizie da {{ source.name }}{% else %}Ultime notizie dal mondo scuola{% endif %}</h1>
-<p class="lead">
+<p>
   {% if source %}<a href="{{ source.url }}" rel="noopener nofollow">Sito ufficiale ↗</a> · <a href="{{ url_for('news.index') }}">Tutte le fonti</a>
   {% else %}Questo è quello che {{ app_name }} raccoglie ogni giorno da {{ sources | length }} fonti.
   {% if not current_user %}<a href="{{ url_for('auth.register') }}">Registrati</a> per ricevere solo ciò che ti interessa, via email o Telegram.{% endif %}{% endif %}
 </p>
+</div>
 
 <form method="get" class="filters" role="search">
-  <label for="q">Cerca</label>
-  <input type="search" id="q" name="q" value="{{ q }}" placeholder="es. graduatorie, A041, trasferimenti" maxlength="80">
+  <div class="field grow"><label for="q">Cerca</label>
+  <input type="search" id="q" name="q" value="{{ q }}" placeholder="es. graduatorie, A041, trasferimenti" maxlength="80"></div>
   {% if not source %}
-  <label for="fonte">Fonte</label>
+  <div class="field"><label for="fonte">Fonte</label>
   <select id="fonte" name="fonte">
     <option value="">Tutte</option>
     {% for s in sources %}<option value="{{ s.id }}" {% if s.id == selected_source %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
-  </select>
+  </select></div>
   {% endif %}
-  <label for="giorni">Periodo</label>
+  <div class="field"><label for="giorni">Periodo</label>
   <select id="giorni" name="giorni">
     {% for d in days_choices %}<option value="{{ d }}" {% if d == days %}selected{% endif %}>{% if d == 1 %}Oggi e ieri{% else %}Ultimi {{ d }} giorni{% endif %}</option>{% endfor %}
-  </select>
+  </select></div>
   <button type="submit" class="button">Filtra</button>
 </form>
 
-<p class="muted">{{ pages.total }} notizie{% if pages.last > 1 %} · pagina {{ pages.current }} di {{ pages.last }}{% endif %}</p>
+<p class="count">{{ pages.total }} notizie{% if pages.last > 1 %} · pagina {{ pages.current }} di {{ pages.last }}{% endif %}</p>
 {% include "_news_list.html" %}
 
 {% if pages.last > 1 %}

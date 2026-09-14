@@ -15,7 +15,7 @@ di default, alert immediato opzionale).
 - [x] 6a. Web base (Flask SSR): registrazione, login, account, consenso/revoca/export/cancellazione (GDPR), SEO base, tema chiaro/scuro
 - [x] 6b. Preferenze (fonti, keyword, canali, frequenza, orario), aggiunta fonti, collegamento Telegram (`/link`), login Google, landing pubblica
 - [x] 7a. Pagine notizie: `/notizie` pubblica con filtri e pagine per fonte (SEO), `/le-mie-notizie` con recap per giorno
-- [ ] 7b. Restyling UI (layout moderno, mobile-first, design system minimo; fix delle brutture grafiche segnalate)
+- [x] 7b. Restyling UI — design system a token (chiaro/scuro), hero con anteprima, card, form e filtri coerenti (da rifinire su feedback)
 
 ## Requisiti trasversali (richiesti esplicitamente)
 
@@ -30,6 +30,7 @@ di default, alert immediato opzionale).
 
 - [ ] **Catalogo completo fonti italiane — requisito di base prima dell'apertura al pubblico**: tutti i **20 USR regionali** e tutti gli **USP di ogni provincia** (~100) devono essere già presenti, con URL controllato a mano (feed RSS o pagina HTML) e **coperti da test** (fixture con un campione reale della pagina/feed di ogni fonte, così un cambio di struttura viene rilevato). Da fare in più passate: raccolta URL → verifica automatica con `detect_source` → revisione manuale dei casi dubbi → test → `config.example.json`/seed nel DB con `default_follow` sensato (utente sceglie regione/provincia)
 - [x] Verifica email (double opt-in) prima di attivare il canale email
+- [ ] Reset password ("password dimenticata") via email — tabella token già pronta
 - [ ] Pubblicità in pagina (solo quando ci sarà trazione)
 - [ ] Deploy (Hetzner + Coolify valutato; oppure free tier Google)
 - [ ] **Database**: SQLite (WAL) va bene finché bot e web stanno sullo stesso host con disco persistente (VPS/Coolify). Se l'hosting è serverless o multi-host → Postgres, oppure Litestream/Turso per replicare SQLite. Decidere insieme all'hosting; nel frattempo tenere l'SQL specifico SQLite concentrato in `bot/db*.py`

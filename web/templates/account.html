@@ -2,7 +2,7 @@
 {% block title %}Il tuo account — {{ app_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
-<h1>Il tuo account</h1>
+<div class="page-head"><h1>Il tuo account</h1><p>Dati, sicurezza e i tuoi diritti sui dati personali.</p></div>
 
 {% if user.email and not user.email_verified %}
 <section class="card warning">
@@ -32,7 +32,7 @@
 
 <section class="card">
   <h2>Dati</h2>
-  <dl>
+  <dl class="kv">
     <dt>Email</dt><dd>{{ user.email or '—' }}{% if user.email %} {% if user.email_verified %}✅ confermata{% else %}⚠️ da confermare{% endif %}{% endif %}</dd>
     <dt>Telegram</dt><dd>{% if user.telegram_id %}collegato{% else %}non collegato{% endif %}</dd>
     <dt>Notifiche</dt><dd>{% if user.active and not needs_consent %}attive{% else %}sospese{% endif %}

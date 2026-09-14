@@ -2,43 +2,52 @@
 {% block title %}{{ app_name }} — notizie dal mondo scuola, filtrate per te{% endblock %}
 {% block content %}
 <section class="hero">
-  <h1>Le notizie della scuola che ti interessano, senza cercarle ogni giorno</h1>
-  <p class="lead">
-    {{ app_name }} legge per te i siti degli <strong>Uffici Scolastici Regionali e Provinciali</strong> e del
-    <strong>Ministero</strong> e ti avvisa quando esce qualcosa che riguarda la tua classe di concorso,
-    la tua provincia o gli argomenti che segui: graduatorie, trasferimenti, circolari, novità normative.
-  </p>
-  <p>
-    <a class="button primary" href="{{ url_for('auth.register') }}">Registrati gratis</a>
-    <a class="button" href="{{ url_for('auth.login') }}">Accedi</a>
-  </p>
+  <div>
+    <span class="eyebrow">USR · USP · Ministero</span>
+    <h1>Le notizie della scuola che ti interessano, senza cercarle ogni giorno</h1>
+    <p class="lead">
+      {{ app_name }} legge per te i siti degli Uffici Scolastici Regionali e Provinciali e del Ministero
+      e ti avvisa quando esce qualcosa sulla tua classe di concorso, la tua provincia o gli argomenti che segui:
+      graduatorie, trasferimenti, circolari, concorsi.
+    </p>
+    <div class="cta">
+      <a class="button primary lg" href="{{ url_for('auth.register') }}">Registrati gratis</a>
+      <a class="button lg" href="{{ url_for('news.index') }}">Guarda le notizie</a>
+    </div>
+    <p class="muted cta-note">Via email o Telegram · riepilogo giornaliero o avvisi immediati · nessun tracciamento</p>
+  </div>
+  <aside class="hero-demo" aria-label="Esempio di riepilogo">
+    <div class="demo-head"><span>📢 Riepilogo del giorno</span><span>3 notizie · 1 per te</span></div>
+    <div class="demo-item hit"><strong>Mobilità docenti 2026/27: pubblicati gli esiti</strong>USP Bologna · 🔔 trasferimenti</div>
+    <div class="demo-item"><strong>Calendario scolastico regionale</strong>USR Emilia-Romagna</div>
+    <div class="demo-item"><strong>Avviso: aggiornamento GPS</strong>USP Rimini</div>
+  </aside>
 </section>
 
-<section class="features">
+<section class="section">
   <h2>Come funziona</h2>
-  <ol>
-    <li><strong>Scegli le fonti</strong>: gli USR e gli USP che ti riguardano, il MIM, o aggiungi un sito tu.</li>
-    <li><strong>Scegli le parole chiave</strong>: la tua classe di concorso (es. <em>A041</em>), "trasferimenti", "graduatorie"…</li>
-    <li><strong>Scegli come e quando</strong>: un <strong>riepilogo giornaliero</strong> via <strong>email</strong> e/o
-      <strong>Telegram</strong>, oppure <strong>avvisi immediati</strong> appena esce una notizia con le tue parole chiave.</li>
-  </ol>
+  <div class="grid cols-3">
+    <div class="feature"><span class="num">1</span><h3>Scegli le fonti</h3><p>Gli USR e gli USP che ti riguardano, il Ministero, o aggiungi tu un sito o un feed.</p></div>
+    <div class="feature"><span class="num">2</span><h3>Scegli le parole chiave</h3><p>La tua classe di concorso (es. <em>A041</em>), «trasferimenti», «graduatorie», «immissioni in ruolo»…</p></div>
+    <div class="feature"><span class="num">3</span><h3>Scegli come e quando</h3><p>Un riepilogo al giorno via email e/o Telegram, oppure un avviso immediato appena esce una notizia con le tue parole.</p></div>
+  </div>
 </section>
 
 {% if latest %}
-<section class="features">
+<section class="section">
   <h2>Ultime notizie raccolte</h2>
   {% set news = latest %}{% include "_news_list.html" %}
-  <p><a class="button" href="{{ url_for('news.index') }}">Tutte le notizie, con filtri →</a></p>
+  <p class="more"><a class="button" href="{{ url_for('news.index') }}">Tutte le notizie, con filtri →</a></p>
 </section>
 {% endif %}
 
-<section class="features">
+<section class="section">
   <h2>Perché usarlo</h2>
-  <ul>
-    <li><strong>Doppio canale</strong>: email per chi non usa Telegram, Telegram per chi vuole tutto sul telefono. O entrambi.</li>
-    <li><strong>Tu decidi la frequenza</strong>: niente raffiche di notifiche se non le vuoi.</li>
-    <li><strong>Nessun tracciamento</strong>: solo un cookie tecnico per l'accesso, nessun servizio di terze parti nel browser.</li>
-    <li><strong>Software libero</strong>: il codice è pubblico (licenza AGPL) e puoi verificarlo.</li>
-  </ul>
+  <div class="grid cols-2">
+    <div class="feature"><div class="ico">✉️ + ✈️</div><h3>Doppio canale</h3><p>Email per chi non usa Telegram, Telegram per chi vuole tutto sul telefono. O entrambi.</p></div>
+    <div class="feature"><div class="ico">⏱️</div><h3>Tu decidi la frequenza</h3><p>Niente raffiche di notifiche: un riepilogo all'ora che preferisci, e gli avvisi immediati solo se li vuoi.</p></div>
+    <div class="feature"><div class="ico">🔒</div><h3>Nessun tracciamento</h3><p>Solo un cookie tecnico per l'accesso, nessun servizio di terze parti nel browser. Cancelli l'account quando vuoi.</p></div>
+    <div class="feature"><div class="ico">🧑‍💻</div><h3>Software libero</h3><p>Il codice è pubblico con licenza AGPL: puoi verificarlo e proporre miglioramenti.</p></div>
+  </div>
 </section>
 {% endblock %}

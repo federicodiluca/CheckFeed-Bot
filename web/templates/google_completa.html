@@ -2,6 +2,7 @@
 {% block title %}Completa la registrazione — {{ app_name }}{% endblock %}
 {% block robots %}<meta name="robots" content="noindex, nofollow">{% endblock %}
 {% block content %}
+<div class="auth">
 <h1>Completa la registrazione</h1>
 <form method="post" class="card">
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -14,4 +15,5 @@
   </label>
   <button type="submit" class="button primary">Crea l'account</button>
 </form>
+</div>
 {% endblock %}

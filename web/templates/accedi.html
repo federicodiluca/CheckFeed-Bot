@@ -2,6 +2,7 @@
 {% block title %}Accedi — {{ app_name }}{% endblock %}
 {% block description %}Accedi al tuo account {{ app_name }} per gestire fonti, parole chiave e notifiche.{% endblock %}
 {% block content %}
+<div class="auth">
 <h1>Accedi</h1>
 <form method="post" class="card" novalidate>
   <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
@@ -15,6 +16,7 @@
 </form>
 {% if google_enabled %}
 <p class="or">oppure</p>
-<p><a class="button" href="{{ url_for('google.start') }}">Accedi con Google</a></p>
+<p><a class="button google" href="{{ url_for('google.start') }}">Accedi con Google</a></p>
 {% endif %}
+</div>
 {% endblock %}
